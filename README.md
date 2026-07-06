@@ -50,6 +50,8 @@ Read the full details in the docs:
   data to dashboard, including the runtime control loop.
 - **[Architecture](docs/ARCHITECTURE.md)** — the technical design, tech-stack
   choices and justification, data contracts, and module boundaries.
+- **[Project Synopsis](docs/PROJECT_SYNOPSIS.docx)** — the original university
+  project synopsis this repo is based on.
 
 ## Tech stack
 
