@@ -6,8 +6,6 @@ desktop.ini
 .idea
 
 # Dev
-.pdm-python
-
 .env
 .*.env
 .env.*

@@ -1,0 +1,18 @@
+# Skills
+
+This directory is reserved for project-specific Claude Code skills
+(`.claude/skills/<name>/SKILL.md`). It's currently empty on purpose: MaHanya has
+no application code yet (see [`../../CLAUDE.md`](../../CLAUDE.md) and
+[`../../docs/ARCHITECTURE.md`](../../docs/ARCHITECTURE.md)), so there's nothing
+for a workflow skill to operate on.
+
+Candidate skills once implementation starts, as ideas — none of these exist yet:
+
+- **run-sumo-scenario** — launch a calibrated SUMO scenario headlessly and
+  summarize the resulting metrics.
+- **train-model** — kick off transformer training with the project's standard
+  hyperparameters.
+- **docs-sync** — check that `docs/ARCHITECTURE.md`'s module list matches the
+  actual `src/` tree.
+
+Add a skill here only once there's real code for it to act on.
