@@ -283,3 +283,36 @@ models/                            # gitignored: trained model artifacts
 No CI workflow is created yet — not requested for this documentation phase, and
 naturally belongs with the implementation phase once there's code and tests for
 it to run.
+
+## References
+
+The literature cited in the underlying project synopsis, tied to the specific
+design decisions above they ground:
+
+- Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N.,
+  Kaiser, L., & Polosukhin, I. (2017). Attention is all you need. *Advances in
+  Neural Information Processing Systems*, 30, 5998–6008. — The foundational
+  Transformer architecture; underlies choosing a `nn.TransformerEncoder` (see
+  [Tech stack](#tech-stack): Model) over the retired prototype's RandomForest
+  placeholder.
+- Zhao, R., Hu, H., Li, Y., Fan, Y., Gao, F., & Gao, Z. (2024). Sequence
+  decision transformer for adaptive traffic signal control. *Sensors*,
+  24(19), 6202. — The synopsis's own precedent for treating a window of
+  traffic-state sequences as input to a transformer-based phase recommender;
+  directly motivates the `model` component's design (see
+  [Component breakdown](#component-breakdown) and [Data contracts](#data-contracts)).
+- Lopez, P. A., Behrisch, M., Bieker-Walz, L., Erdmann, J., Flötteröd, Y. P.,
+  Hilbrich, R., Lücken, L., Rummel, J., Wagner, P., & Wießner, E. (2018).
+  Microscopic traffic simulation using SUMO. In *2018 21st International
+  Conference on Intelligent Transportation Systems (ITSC)* (pp. 2575–2582).
+  IEEE. — The reference paper for SUMO itself; justifies SUMO + TraCI as the
+  microsimulation choice (see [Tech stack](#tech-stack): Microsimulation) over
+  building or adopting a different simulator.
+- Abdulhai, B., Pringle, R., & Karakoulas, G. J. (2003). Reinforcement
+  learning for true adaptive traffic signal control. *Journal of
+  Transportation Engineering*, 129(3), 278–285. — An early precedent for
+  learned (rather than fixed-time) signal control validated in simulation;
+  supports the overall approach of pairing a learned recommender with a
+  deterministic safety layer rather than trusting a learned controller's
+  output directly (see [Scope](#scope) and the `scheduler` component in
+  [Component breakdown](#component-breakdown)).
