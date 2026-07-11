@@ -240,6 +240,8 @@ pattern of dumping one big JSON blob of `state_history` at the end of a run —
 per-line records are what let the dashboard poll incrementally instead of
 waiting for a run to finish.
 
+<a id="dashboard"></a>
+
 ## API and dashboard
 
 FastAPI is the process boundary between simulation/control and presentation. It
