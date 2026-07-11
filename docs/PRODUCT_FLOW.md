@@ -16,7 +16,9 @@ flowchart LR
     E --> F[Runtime control loop]
     C --> F
     F --> G[Evaluation vs.\nfixed-time baseline]
-    F --> H[Dashboard]
+    F --> I["Internal FastAPI relay\n/api/*"]
+    I --> H["Next.js dashboard\n/*"]
+    G --> I
     G --> H
 ```
 
@@ -82,9 +84,9 @@ model (stage 5); produces a live decision log.
 - **Output:** a real-time-ish view of junction state, active phase, priority
   events, and the model's recommendation vs. the scheduler's actual decision;
   plus evaluation results.
-- **Tooling:** Streamlit, polling the logged state store (see
-  [Architecture](ARCHITECTURE.md#dashboard) for why it polls rather than
-  attaches in-process).
+- **Tooling:** Next.js SPA static export with Shadcn UI, reading snapshots and
+  realtime telemetry from the internal FastAPI relay under `/api/*` (see
+  [Architecture](ARCHITECTURE.md#internal-api-and-dashboard) for the process boundary).
 
 ## Runtime control loop (detail)
 
@@ -116,8 +118,8 @@ it, and every such decision is logged with a reason code (e.g.
 | Calibrated scenario (`.net.xml`/`.rou.xml`/`.sumocfg`) | SUMO calibration (+ `netedit`) | Sequence generation, runtime control loop, evaluation |
 | Labelled sequences (Parquet) | Sequence generation | Model training |
 | Trained model weights | Model training | Runtime control loop |
-| Runtime decision log (JSON-lines) | Runtime control loop | Evaluation, dashboard |
-| Evaluation report | Evaluation | Dashboard |
+| Runtime decision log (JSON-lines) | Runtime control loop | Evaluation, internal FastAPI relay, dashboard |
+| Evaluation report | Evaluation | internal FastAPI relay, dashboard |
 
 ## Failure and fallback behavior
 
@@ -136,9 +138,10 @@ explicitly rather than left to crash:
 
 ## Dashboard data source
 
-The dashboard reads the runtime decision log (a logged state store — JSON-lines
-or SQLite) rather than attaching to the control loop in-process. This is a
-direct consequence of Streamlit's execution model: a Streamlit app reruns
-top-to-bottom on each interaction/refresh, which doesn't suit holding a live
-reference into another process's loop state. The control loop writes a record
-per tick; the dashboard polls and renders the latest records.
+The dashboard does not attach to the control loop or TraCI directly. The control
+loop writes a record per tick to the logged state store (JSON-lines or SQLite),
+and the internal FastAPI relay exposes that state through `/api/*` snapshot
+endpoints plus a WebSocket or Server-Sent Events stream. The Next.js SPA renders
+the latest state from that internal app boundary, keeping SUMO, PyTorch, and
+scheduler dependencies on the Python side while the browser receives only
+serialized telemetry and reports.
