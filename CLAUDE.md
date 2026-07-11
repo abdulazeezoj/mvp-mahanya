@@ -4,8 +4,8 @@ Priority-aware intelligent traffic control: SUMO simulation + a lightweight
 Transformer Encoder + a deterministic rule-based safety scheduler, calibrated
 against real traffic counts from the Sapon Under-bridge Junction, Abeokuta.
 
-**Current phase: documentation & planning only.** There is no `src/`, no
-`pyproject.toml`, and no tests in this repo yet.
+**Current phase: documentation & planning only.** There is no `api/`, `web/`,
+`pyproject.toml`, `package.json`, or tests in this repo yet.
 
 ## Read these first
 
@@ -32,8 +32,9 @@ contain the reasoning behind decisions that would otherwise look arbitrary.
   ever introduced, uses `volta`. There is no JS/TS in this project today.
 - **The project is named MaHanya**, not "aitrafix" or "trafix" — don't
   reintroduce the old name in new files.
-- **This phase is docs-only.** Don't scaffold `src/`, `pyproject.toml`, or any
-  application code unless explicitly asked to begin the implementation phase.
+- **This phase is docs-only.** Don't scaffold `api/`, `web/`, `pyproject.toml`,
+  `package.json`, or any application code unless explicitly asked to begin the
+  implementation phase.
 
 ## Conventions
 
