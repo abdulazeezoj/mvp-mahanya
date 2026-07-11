@@ -16,7 +16,7 @@ flowchart LR
     E --> F[Runtime control loop]
     C --> F
     F --> G[Evaluation vs.\nfixed-time baseline]
-    F --> I["FastAPI relay\n/api/*"]
+    F --> I["Internal FastAPI relay\n/api/*"]
     I --> H["Next.js dashboard\n/*"]
     G --> I
     G --> H
@@ -85,8 +85,8 @@ model (stage 5); produces a live decision log.
   events, and the model's recommendation vs. the scheduler's actual decision;
   plus evaluation results.
 - **Tooling:** Next.js SPA static export with Shadcn UI, reading snapshots and
-  realtime telemetry from FastAPI under `/api/*` (see
-  [Architecture](ARCHITECTURE.md#api-and-dashboard) for the process boundary).
+  realtime telemetry from the internal FastAPI relay under `/api/*` (see
+  [Architecture](ARCHITECTURE.md#internal-api-and-dashboard) for the process boundary).
 
 ## Runtime control loop (detail)
 
@@ -118,8 +118,8 @@ it, and every such decision is logged with a reason code (e.g.
 | Calibrated scenario (`.net.xml`/`.rou.xml`/`.sumocfg`) | SUMO calibration (+ `netedit`) | Sequence generation, runtime control loop, evaluation |
 | Labelled sequences (Parquet) | Sequence generation | Model training |
 | Trained model weights | Model training | Runtime control loop |
-| Runtime decision log (JSON-lines) | Runtime control loop | Evaluation, FastAPI relay, dashboard |
-| Evaluation report | Evaluation | FastAPI relay, dashboard |
+| Runtime decision log (JSON-lines) | Runtime control loop | Evaluation, internal FastAPI relay, dashboard |
+| Evaluation report | Evaluation | internal FastAPI relay, dashboard |
 
 ## Failure and fallback behavior
 
@@ -140,7 +140,8 @@ explicitly rather than left to crash:
 
 The dashboard does not attach to the control loop or TraCI directly. The control
 loop writes a record per tick to the logged state store (JSON-lines or SQLite),
-and FastAPI exposes that state through `/api/*` snapshot endpoints plus a
-WebSocket or Server-Sent Events stream. The Next.js SPA renders the latest state
-from that API boundary, keeping SUMO, PyTorch, and scheduler dependencies on the
-Python side while the browser receives only serialized telemetry and reports.
+and the internal FastAPI relay exposes that state through `/api/*` snapshot
+endpoints plus a WebSocket or Server-Sent Events stream. The Next.js SPA renders
+the latest state from that internal app boundary, keeping SUMO, PyTorch, and
+scheduler dependencies on the Python side while the browser receives only
+serialized telemetry and reports.

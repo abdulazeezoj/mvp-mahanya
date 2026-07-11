@@ -56,7 +56,7 @@ Read the full details in the docs:
 ## Tech stack
 
 Python + web: SUMO + TraCI for simulation, PyTorch for the transformer encoder,
-`scipy.stats` for distribution fitting, FastAPI for the `/api/*` simulation relay,
+`scipy.stats` for distribution fitting, FastAPI for the internal `/api/*` simulation relay,
 Typer for the CLI, and a Next.js SPA static export with Shadcn UI for the
 `/*` dashboard. See [Architecture](docs/ARCHITECTURE.md#tech-stack) for the full
 reasoning. Dependency and environment management uses [`uv`](https://docs.astral.sh/uv/)
@@ -83,8 +83,8 @@ No `src/`, `pyproject.toml`, `package.json`, or tests exist yet — those are
 introduced in the implementation phase, once the docs above are settled. The
 proposed future source layout is documented in
 [Architecture](docs/ARCHITECTURE.md#proposed-source-layout): `src/mahanya` for
-simulation/model/scheduler internals, `src/api` for FastAPI, `src/web` for the
-Next.js SPA source, and `src/cli` for the Typer CLI.
+simulation/model/scheduler internals, `src/api` for the internal FastAPI relay,
+`src/web` for the Next.js SPA source, and `src/cli` for the Typer CLI.
 
 ## How to run it
 
