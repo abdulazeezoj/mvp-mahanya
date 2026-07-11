@@ -52,6 +52,9 @@ Read the full details in the docs:
   choices and justification, data contracts, and module boundaries.
 - **[Project Synopsis](docs/PROJECT_SYNOPSIS.docx)** — the original university
   project synopsis this repo is based on.
+- **[Project Writing Guidelines](docs/Project_Writing_Guideline.md)** —
+  formatting rules for the final project write-up (`Project_Submission.docx`),
+  not for code.
 
 ## Tech stack
 
@@ -60,8 +63,8 @@ Python + web: SUMO + TraCI for simulation, PyTorch for the transformer encoder,
 Typer for the CLI, and a Next.js SPA static export with Shadcn UI for the
 `/*` dashboard. See [Architecture](docs/ARCHITECTURE.md#tech-stack) for the full
 reasoning. Dependency and environment management uses [`uv`](https://docs.astral.sh/uv/)
-for Python and [`volta`](https://volta.sh/) for the root `package.json` web
-toolchain.
+for the `api/` Python toolchain and [`volta`](https://volta.sh/) for the
+`web/` JS/TS toolchain.
 
 ## Repo layout
 
@@ -79,12 +82,15 @@ mvp-mahanya/
         └── README.md
 ```
 
-No `src/`, `pyproject.toml`, `package.json`, or tests exist yet — those are
-introduced in the implementation phase, once the docs above are settled. The
-proposed future source layout is documented in
-[Architecture](docs/ARCHITECTURE.md#proposed-source-layout): `src/mahanya` for
-simulation/model/scheduler internals, `src/api` for the internal FastAPI relay,
-`src/web` for the Next.js SPA source, and `src/cli` for the Typer CLI.
+No `api/`, `web/`, `pyproject.toml`, `package.json`, or tests exist yet — those
+are introduced in the implementation phase, once the docs above are settled.
+The proposed future layout splits into two independent, self-contained
+projects, documented in
+[Architecture](docs/ARCHITECTURE.md#proposed-source-layout): `api/` (own
+`pyproject.toml`, with `mahanya`, `core`, `routes`, and `cli` under
+`api/src`) for the simulation/model/scheduler internals, the internal FastAPI
+relay, and the Typer CLI; and `web/` (own `package.json`, Next.js source
+under `web/src`) for the SPA dashboard.
 
 ## How to run it
 
