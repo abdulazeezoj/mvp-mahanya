@@ -13,6 +13,6 @@ Candidate skills once implementation starts, as ideas — none of these exist ye
 - **train-model** — kick off transformer training with the project's standard
   hyperparameters.
 - **docs-sync** — check that `docs/ARCHITECTURE.md`'s module list matches the
-  actual `src/` tree.
+  actual `api/src` and `web/src` trees.
 
 Add a skill here only once there's real code for it to act on.
