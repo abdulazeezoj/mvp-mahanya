@@ -124,17 +124,21 @@ Next.js SPA source under `web/src` (see
   (observe → predict → validate → apply → log). Depends only on `schemas`, and
   calls into `sumo` and `model` through their public interfaces rather than
   reaching into their internals.
-- **`core`** — the FastAPI app factory and shared settings/dependency
-  injection under `api/src/core`. Constructs the app and includes routers
-  from `routes/` under a single `/api` prefix. Does not implement
-  traffic-control policy.
+- **`core`** — the FastAPI app factory (`core/app.py`) and shared
+  settings/dependency-injection callables (`core/deps.py`) under
+  `api/src/core`. `core/app.py` constructs the app and includes routers from
+  `routes/` under a single `/api` prefix. Does not implement traffic-control
+  policy.
 - **`routes`** — resource-specific FastAPI routers under `api/src/routes`
   (`scenarios`, `controls`, `snapshots`, `streams`): `/api/*` scenario
   lifecycle endpoints, run/pause/step/reset controls, health/config endpoints,
   current-state and decision-log queries, and the realtime relay that streams
   simulation ticks to clients. Each depends on `mahanya` for domain logic and
-  `core` for shared dependencies; none implement traffic-control policy
-  themselves — they call `mahanya` services and serialize the outputs.
+  on `core.deps` (only) for shared dependency callables/settings — never on
+  `core.app`, since `core.app` is what imports and includes these routers;
+  depending the other way would create a circular import at startup. None
+  implement traffic-control policy themselves — they call `mahanya` services
+  and serialize the outputs.
 - **`evaluation`** — a fixed-time baseline controller plus the metrics module
   (waiting time, queue length, throughput, priority response time), run against
   logged data from both controllers.
@@ -162,20 +166,25 @@ flowchart TD
     scheduler --> model
     evaluation[evaluation] --> schemas
     evaluation --> sumo
-    core[core] --> mahanya[mahanya]
-    routes[routes] --> mahanya
-    routes --> core
+    coreApp["core.app"] --> mahanya[mahanya]
+    coreApp --> routes[routes]
+    coreDeps["core.deps"] --> mahanya
+    routes --> mahanya
+    routes --> coreDeps
     cli[cli] --> mahanya
-    cli --> core
+    cli --> coreApp
 ```
 
 Within `mahanya`, `schemas` is the shared kernel; `sumo`, `model`, and
 `evaluation` each depend on it but not on each other. `scheduler` is the only
 `mahanya` module allowed to depend on both `sumo` and `model`, since
 orchestrating a control-loop tick is its job. `core` and `routes` (together,
-the former `api` package) depend on `mahanya`; `routes` also depends on `core`
-for the app instance and shared settings. `cli` depends on `mahanya` and
-`core`. `web`'s relationship to the rest of the system is an HTTP boundary,
+the former `api` package) depend on `mahanya`; `routes` also depends on
+`core.deps` for shared dependency callables/settings — deliberately not on
+`core.app`, which is what imports and includes `routes` to build the app, so
+depending the other way would create a circular import. `cli` depends on
+`mahanya` and `core.app` (to obtain the app instance for `serve-api`). `web`'s
+relationship to the rest of the system is an HTTP boundary,
 not a Python import — it talks only to the internal `/api/*` endpoints (see
 [System context](#system-context)), never to Python internals directly.
 This deliberately avoids the retired prototype's tight coupling, where
