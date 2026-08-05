@@ -1,23 +1,27 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "CLAUDE_CODE_ENABLE_TELEMETRY": "1",
+    "OTEL_METRICS_EXPORTER": "otlp"
+  },
   "permissions": {
     "allow": [
-      "Bash(uv run:*)",
-      "Bash(uv sync:*)",
-      "Bash(uv add:*)",
-      "Bash(uv lock:*)",
-      "Bash(pytest:*)",
-      "Bash(ruff check:*)",
-      "Bash(ruff format:*)",
-      "Bash(mypy:*)",
-      "Bash(git status)",
-      "Bash(git diff:*)",
-      "Bash(git log:*)"
+      "Bash(npm *)",
+      "Bash(npx *)",
+      "Bash(make *)",
+      "Bash(git *)",
+      "Bash(docker *)",
+      "Read(*)",
+      "Edit",
+      "WebFetch",
+      "Skill(*)"
     ],
-    "deny": [
-      "Bash(rm -rf:*)",
-      "Bash(git push --force:*)",
-      "Bash(git reset --hard:*)",
-      "Bash(sudo:*)"
-    ]
-  }
+    "deny": []
+  },
+  "enabledPlugins": {
+    "frontend-design@claude-plugins-official": true,
+    "code-review@claude-plugins-official": true,
+    "security-guidance@claude-plugins-official": true
+  },
+  "autoMemoryEnabled": true
 }

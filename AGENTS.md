@@ -17,8 +17,8 @@ Once implementation starts, the intended toolchain (already pre-allowlisted
 in `.claude/settings.json`) is: `uv sync` / `uv run` / `uv add` / `uv lock`
 for the `api/` Python project, `pytest` for tests, `ruff check` / `ruff
 format` for lint/format, and `mypy` for type-checking — all run from inside
-`api/`. `web/` will use `volta`-managed `npm`/`next` commands, run from
-inside `web/`.
+`api/`. `web/` uses `pnpm`-managed `next`/`biome` commands (no volta), run
+from inside `web/`.
 
 ## Read these first
 
@@ -44,7 +44,7 @@ arbitrary.
   section; everything else was intentionally discarded (e.g. it used a
   `RandomForestClassifier`, not a transformer).
 - **Env managers are fixed by convention:** Python tooling uses `uv` (never
-  pdm, poetry, or conda); the JS/TS toolchain uses `volta`.
+  pdm, poetry, or conda); the JS/TS toolchain uses `pnpm` (no volta).
 - **The project is named MaHanya**, not "aitrafix" or "trafix" — don't
   reintroduce the old name in new files.
 - **This phase is docs-only** — see above.
