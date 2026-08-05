@@ -393,7 +393,7 @@ web/                                 # JS/TS service: Next.js SPA dashboard, ful
   [Data contracts](#data-contracts)).
 - The `"manual"` `input()`-driven control mode in `SUMOTrafficSimulation.run` —
   useful for early prototyping, not part of the evaluated system.
-- PDM as the dependency manager, in favor of `uv` for Python (`api/`) and `volta` for the JS/TS toolchain (`web/`).
+- PDM as the dependency manager, in favor of `uv` for Python (`api/`) and `pnpm` for the JS/TS toolchain (`web/`).
 
 ## Not scaffolded in this phase
 
