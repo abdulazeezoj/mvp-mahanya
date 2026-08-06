@@ -21,6 +21,9 @@ __pycache__
 .pytest_cache
 
 data
+!/api/data/
+/api/data/*
+!/api/data/raw/
 
 models
 

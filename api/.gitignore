@@ -218,3 +218,11 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# MaHanya: generated/processed data and trained model artifacts.
+# api/data/raw/ (field counts) and the SUMO network under
+# api/src/mahanya/sumo/network/ are checked in as data, not ignored.
+/data/processed/
+/data/interim/
+/models/*.pt
+/models/*.ckpt

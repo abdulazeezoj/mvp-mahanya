@@ -1,17 +1,102 @@
 [project]
 name = "api"
 version = "0.1.0"
-description = "Add your description here"
+description = "MaHanya priority-aware intelligent traffic control: SUMO simulation, transformer phase recommender, rule-based scheduler, and internal FastAPI relay."
 readme = "README.md"
 authors = [
     { name = "Abdulazeez Jimoh", email = "abdulazeezojimoh@gmail.com" }
 ]
-requires-python = ">=3.13"
-dependencies = []
+requires-python = ">=3.11,<3.14"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.32",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "typer>=0.13",
+    "scipy>=1.14",
+    "pandas>=2.2",
+    "pyarrow>=17.0",
+    "numpy>=1.26",
+    "torch>=2.4",
+    "traci==1.18.0",
+    "sumolib==1.18.0",
+    "orjson>=3.10",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3",
+    "pytest-cov>=6.0",
+    "pytest-asyncio>=0.24",
+    "httpx>=0.27",
+    "ruff>=0.7",
+    "mypy>=1.13",
+    "pandas-stubs>=2.2",
+]
 
 [project.scripts]
-api = "api:main"
+mahanya = "cli.main:app"
 
 [build-system]
-requires = ["uv_build>=0.11.7,<0.12.0"]
-build-backend = "uv_build"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mahanya", "src/core", "src/routes", "src/cli"]
+
+[tool.uv]
+package = true
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cpu" }]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --cov=mahanya --cov=core --cov=routes --cov=cli --cov-report=term-missing"
+asyncio_mode = "auto"
+markers = [
+    "integration: exercises a real SUMO/TraCI process (slower, headless).",
+]
+
+[tool.coverage.run]
+branch = true
+source = ["src"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+]
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests"]
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+# FastAPI's Depends()/Typer's Option()-as-a-default-value is each
+# framework's own idiom, not the mutable-default-argument footgun B008 is
+# meant to catch.
+"src/routes/*.py" = ["B008"]
+"src/core/app.py" = ["B008"]
+"src/cli/main.py" = ["B008"]
+
+[tool.mypy]
+python_version = "3.13"
+mypy_path = "src"
+explicit_package_bases = true
+strict = true
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = ["traci.*", "sumolib.*", "scipy.*"]
+ignore_missing_imports = true

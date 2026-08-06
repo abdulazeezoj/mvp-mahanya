@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Straight-through movements only (no protected-turn phases) — the
+  documented default assumption in docs/ARCHITECTURE.md's "Data contracts"
+  section, pending confirmation against the surveyed junction geometry.
+-->
+<connections>
+    <connection from="north_in" to="south_out"/>
+    <connection from="south_in" to="north_out"/>
+    <connection from="east_in" to="west_out"/>
+    <connection from="west_in" to="east_out"/>
+</connections>
