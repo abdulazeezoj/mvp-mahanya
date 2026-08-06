@@ -10,18 +10,21 @@ from __future__ import annotations
 import asyncio
 import contextlib
 
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect
+from fastapi import APIRouter, Depends, WebSocket, WebSocketDisconnect
 
-from core.deps import get_registry
+from core.deps import SessionRegistry, get_registry
 from mahanya.schemas import DecisionLogRecord
 
 router = APIRouter(prefix="/streams", tags=["streams"])
 
 
 @router.websocket("/{scenario_id}")
-async def stream_scenario(websocket: WebSocket, scenario_id: str) -> None:
+async def stream_scenario(
+    websocket: WebSocket,
+    scenario_id: str,
+    registry: SessionRegistry = Depends(get_registry),
+) -> None:
     await websocket.accept()
-    registry = get_registry()
     session = registry.get_or_create(scenario_id)
     last_tick: int | None = None
     with contextlib.suppress(WebSocketDisconnect):
