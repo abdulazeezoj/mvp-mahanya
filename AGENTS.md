@@ -6,19 +6,22 @@ scheduler, calibrated against real traffic counts from the Sapon
 Under-bridge Junction, Abeokuta. This is an Ahmadu Bello University
 final-year project.
 
-## Current phase: documentation & planning only
+## Current phase: implementation
 
-There is no `api/`, `web/`, `pyproject.toml`, `package.json`, or tests in
-this repo yet — there are no build/lint/test commands to run. Don't scaffold
-`api/`, `web/`, `pyproject.toml`, `package.json`, or any application code
-unless explicitly asked to begin the implementation phase.
+`api/` and `web/` are both scaffolded and implemented per
+`docs/ARCHITECTURE.md`'s proposed source layout. Real commands to run, from
+inside `api/`: `uv sync`, `uv run pytest`, `uv run ruff check`/`format`,
+`uv run mypy src`, `uv run mahanya <fit|calibrate|generate|train|run|
+evaluate|serve-api|build-web>`. From inside `web/`: `pnpm install`, `pnpm
+dev`, `pnpm build`, `pnpm test` (vitest), `pnpm test:e2e` (Playwright),
+`pnpm check`/`check:fix` (biome), `pnpm typecheck`.
 
-Once implementation starts, the intended toolchain (already pre-allowlisted
-in `.claude/settings.json`) is: `uv sync` / `uv run` / `uv add` / `uv lock`
-for the `api/` Python project, `pytest` for tests, `ruff check` / `ruff
-format` for lint/format, and `mypy` for type-checking — all run from inside
-`api/`. `web/` uses `pnpm`-managed `next`/`biome` commands (no volta), run
-from inside `web/`.
+SUMO must be installed (`apt-get install sumo sumo-tools`, or equivalent)
+and `SUMO_HOME` set for anything that touches `mahanya.sumo` — the
+calibrated network lives at `api/src/mahanya/sumo/network/`. The field-count
+CSV at `api/data/raw/sapon_traffic_counts.csv` is a synthetic placeholder
+(documented as such in-file) standing in until a real Sapon Junction survey
+is collected; swapping it is a drop-in file replacement, no code changes.
 
 ## Read these first
 
@@ -47,7 +50,6 @@ arbitrary.
   pdm, poetry, or conda); the JS/TS toolchain uses `pnpm` (no volta).
 - **The project is named MaHanya**, not "aitrafix" or "trafix" — don't
   reintroduce the old name in new files.
-- **This phase is docs-only** — see above.
 
 ## Architecture at a glance
 
@@ -59,8 +61,7 @@ recommendation is logged with a reason code (`model_accepted`,
 `min_green_hold`, `anti_starvation_force`, `emergency_preempt`, ...) — see
 [`docs/ARCHITECTURE.md#data-contracts`](docs/ARCHITECTURE.md#data-contracts).
 
-The proposed (not yet scaffolded) implementation splits into two
-independent, self-contained projects — see
+The implementation splits into two independent, self-contained projects — see
 [`docs/ARCHITECTURE.md#proposed-source-layout`](docs/ARCHITECTURE.md#proposed-source-layout):
 
 - **`api/`** — Python: SUMO/TraCI simulation, the transformer model, the

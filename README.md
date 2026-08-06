@@ -2,10 +2,10 @@
 
 Priority-aware intelligent traffic control, simulated on real junction data.
 
-> **Status: documentation & planning phase.** There is no application code in this
-> repository yet — see [Repo Layout](#repo-layout) below. This phase exists to nail
-> down the product spec, the end-to-end flow, and the technical architecture before
-> any implementation begins.
+> **Status: implemented.** `api/` (SUMO simulation, transformer model, rule-based
+> scheduler, FastAPI relay, Typer CLI) and `web/` (Next.js dashboard) are both
+> built per [Architecture](docs/ARCHITECTURE.md) — see [How to run it](#how-to-run-it)
+> below.
 
 ## Background
 
@@ -72,20 +72,16 @@ for the `api/` Python toolchain and [`volta`](https://volta.sh/) for the
 mvp-mahanya/
 ├── README.md
 ├── CLAUDE.md
+├── AGENTS.md
 ├── docs/
 │   ├── PRODUCT_SPEC.md
 │   ├── PRODUCT_FLOW.md
 │   └── ARCHITECTURE.md
-└── .claude/
-    ├── settings.json
-    └── skills/
-        └── README.md
+├── api/          # Python: sim/model/scheduler + internal FastAPI relay + CLI
+└── web/          # Next.js SPA dashboard
 ```
 
-No `api/`, `web/`, `pyproject.toml`, `package.json`, or tests exist yet — those
-are introduced in the implementation phase, once the docs above are settled.
-The proposed future layout splits into two independent, self-contained
-projects, documented in
+Two independent, self-contained projects, per
 [Architecture](docs/ARCHITECTURE.md#proposed-source-layout): `api/` (own
 `pyproject.toml`, with `mahanya`, `core`, `routes`, and `cli` under
 `api/src`) for the simulation/model/scheduler internals, the internal FastAPI
@@ -94,8 +90,27 @@ under `web/src`) for the SPA dashboard.
 
 ## How to run it
 
-Not yet — this phase is docs only. Once implementation starts, setup and run
-instructions will live here and in `docs/ARCHITECTURE.md`.
+Requires SUMO installed and `SUMO_HOME` set (`apt-get install sumo
+sumo-tools`).
+
+```sh
+# api/ — from inside api/
+uv sync --extra dev
+uv run mahanya fit                                   # fit arrival distributions
+uv run mahanya calibrate --period peak                # generate a calibrated scenario
+uv run mahanya generate && uv run mahanya train        # generate sequences + train the model
+uv run mahanya serve-api                               # FastAPI relay on :8000
+uv run pytest                                          # full test suite
+
+# web/ — from inside web/, in another terminal
+pnpm install
+pnpm dev                                               # dashboard on :3000, talks to :8000
+pnpm test && pnpm test:e2e                             # vitest + Playwright
+```
+
+A synthetic placeholder field-count CSV
+(`api/data/raw/sapon_traffic_counts.csv`) stands in for a real Sapon
+Under-bridge Junction survey; swapping it in is a drop-in file replacement.
 
 ## Prior art
 
