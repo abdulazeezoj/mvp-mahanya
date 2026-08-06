@@ -33,7 +33,7 @@ export function ApproachStateGrid({
       </CardHeader>
       <CardContent>
         {!trafficState ? (
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs text-muted-foreground">
             No live state yet — run the scenario from the Scenarios page.
           </p>
         ) : (
@@ -47,7 +47,7 @@ export function ApproachStateGrid({
                     className="flex flex-col gap-2 rounded-lg border border-border p-4"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">
+                      <span className="text-xs font-medium">
                         {DIRECTION_LABELS[direction]}
                       </span>
                       {approach.hasEmergencyVehicle && (
@@ -58,14 +58,14 @@ export function ApproachStateGrid({
                       )}
                     </div>
                     <div className="flex items-baseline gap-1">
-                      <span className="text-2xl font-semibold tabular-nums">
+                      <span className="text-xl font-semibold tabular-nums">
                         {approach.vehicleCount}
                       </span>
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-xs text-muted-foreground">
                         vehicles
                       </span>
                     </div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-xs text-muted-foreground">
                       Queue: {approach.queueLength} · Waiting:{" "}
                       {approach.waitingTimeSec.toFixed(0)}s
                     </div>

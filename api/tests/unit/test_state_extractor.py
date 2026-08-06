@@ -33,11 +33,23 @@ class FakeEdgeApi:
 
 
 class FakeVehicleApi:
-    def __init__(self, emergency_ids: set[str]) -> None:
+    def __init__(self, emergency_ids: set[str], ids: list[str] | None = None) -> None:
         self.emergency_ids = emergency_ids
+        self.ids = ids if ids is not None else []
+        self.positions: dict[str, tuple[float, float]] = {}
+        self.angles: dict[str, float] = {}
+
+    def getIDList(self) -> list[str]:
+        return self.ids
 
     def getVehicleClass(self, vehicle_id: str) -> str:
         return "emergency" if vehicle_id in self.emergency_ids else "passenger"
+
+    def getPosition(self, vehicle_id: str) -> tuple[float, float]:
+        return self.positions.get(vehicle_id, (0.0, 0.0))
+
+    def getAngle(self, vehicle_id: str) -> float:
+        return self.angles.get(vehicle_id, 0.0)
 
 
 class FakeConnection:
@@ -81,3 +93,22 @@ def test_extract_traffic_state_flags_emergency_vehicle_by_class():
 
 def test_in_edge_mapping_covers_all_four_directions():
     assert set(IN_EDGE_BY_DIRECTION) == {"north", "south", "east", "west"}
+
+
+def test_extract_traffic_state_includes_network_wide_vehicle_positions():
+    edge = FakeEdgeApi()
+    vehicle = FakeVehicleApi(emergency_ids={"ambulance-1"}, ids=["ambulance-1", "car-1"])
+    vehicle.positions = {"ambulance-1": (10.0, 20.0), "car-1": (30.0, 40.0)}
+    vehicle.angles = {"ambulance-1": 90.0, "car-1": 180.0}
+    conn = FakeConnection(edge, vehicle)
+
+    state = extract_traffic_state(
+        conn, "s1", tick=0, active_phase="NORTH_GREEN", elapsed_phase_time_sec=0.0
+    )
+
+    assert {v.vehicle_id for v in state.vehicles} == {"ambulance-1", "car-1"}
+    ambulance = next(v for v in state.vehicles if v.vehicle_id == "ambulance-1")
+    assert (ambulance.x, ambulance.y, ambulance.angle_deg) == (10.0, 20.0, 90.0)
+    assert ambulance.is_emergency is True
+    car = next(v for v in state.vehicles if v.vehicle_id == "car-1")
+    assert car.is_emergency is False

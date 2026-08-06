@@ -1,5 +1,11 @@
 """Shared data contracts. Every other module depends on this one; it depends on nothing."""
 
+from mahanya.schemas.network import (
+    LaneGeometry,
+    LaneKind,
+    NetworkBounds,
+    NetworkGeometry,
+)
 from mahanya.schemas.traffic import (
     ALL_PHASES,
     GREEN_PHASES,
@@ -16,6 +22,7 @@ from mahanya.schemas.traffic import (
     SchedulerDecision,
     TrafficDirection,
     TrafficState,
+    VehiclePosition,
 )
 
 __all__ = [
@@ -26,6 +33,10 @@ __all__ = [
     "ControllerKind",
     "DecisionLogRecord",
     "EvaluationMetrics",
+    "LaneGeometry",
+    "LaneKind",
+    "NetworkBounds",
+    "NetworkGeometry",
     "Phase",
     "PhaseRecommendation",
     "ReasonCode",
@@ -34,4 +45,5 @@ __all__ = [
     "SchedulerDecision",
     "TrafficDirection",
     "TrafficState",
+    "VehiclePosition",
 ]

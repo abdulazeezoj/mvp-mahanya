@@ -102,6 +102,16 @@ class ApproachState(CamelModel):
     has_emergency_vehicle: bool = False
 
 
+class VehiclePosition(CamelModel):
+    """One vehicle's live position, for rendering on the junction view."""
+
+    vehicle_id: str
+    x: float
+    y: float
+    angle_deg: float = Field(ge=0, le=360)
+    is_emergency: bool = False
+
+
 class TrafficState(CamelModel):
     """A single observed traffic-state snapshot for one junction tick."""
 
@@ -111,6 +121,9 @@ class TrafficState(CamelModel):
     approaches: TrafficDirection[ApproachState]
     active_phase: Phase
     elapsed_phase_time_sec: float = Field(ge=0)
+    #: Live per-vehicle positions network-wide, for the junction visualization.
+    #: Empty for callers that don't need it (e.g. training-sequence generation).
+    vehicles: list[VehiclePosition] = Field(default_factory=list)
 
 
 class PhaseRecommendation(CamelModel):

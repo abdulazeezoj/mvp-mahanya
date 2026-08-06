@@ -1,5 +1,6 @@
 import type {
   EvaluationMetrics,
+  NetworkGeometry,
   Scenario,
   SchedulerDecision,
   TrafficState,
@@ -40,6 +41,10 @@ export const api = {
   listScenarios: () => apiFetch<Scenario[]>("/api/scenarios"),
   getScenario: (scenarioId: string) =>
     apiFetch<Scenario>(`/api/scenarios/${encodeURIComponent(scenarioId)}`),
+  getNetworkGeometry: (scenarioId: string) =>
+    apiFetch<NetworkGeometry>(
+      `/api/scenarios/${encodeURIComponent(scenarioId)}/network`,
+    ),
 
   runScenario: (scenarioId: string) =>
     apiFetch<Scenario>(`/api/controls/${encodeURIComponent(scenarioId)}/run`, {

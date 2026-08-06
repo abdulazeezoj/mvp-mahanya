@@ -46,7 +46,7 @@ export function JunctionSummaryCards({
       <Card>
         <CardHeader>
           <CardDescription>Total Queued</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums">
+          <CardTitle className="text-xl font-semibold tabular-nums">
             {trafficState ? totalQueued : "—"}
           </CardTitle>
           <CardAction>
@@ -56,7 +56,7 @@ export function JunctionSummaryCards({
             </Badge>
           </CardAction>
         </CardHeader>
-        <CardFooter className="text-sm text-muted-foreground">
+        <CardFooter className="text-xs text-muted-foreground">
           {trafficState
             ? `Across all approaches, tick ${trafficState.tick}`
             : "No live state yet"}
@@ -65,7 +65,7 @@ export function JunctionSummaryCards({
       <Card>
         <CardHeader>
           <CardDescription>Active Phase</CardDescription>
-          <CardTitle className="text-2xl font-semibold">
+          <CardTitle className="text-xl font-semibold">
             {trafficState?.activePhase ?? "—"}
           </CardTitle>
           <CardAction>
@@ -75,14 +75,14 @@ export function JunctionSummaryCards({
             </Badge>
           </CardAction>
         </CardHeader>
-        <CardFooter className="text-sm text-muted-foreground">
+        <CardFooter className="text-xs text-muted-foreground">
           {trafficState ? `Scenario ${trafficState.scenarioId}` : "Not running"}
         </CardFooter>
       </Card>
       <Card>
         <CardHeader>
           <CardDescription>Emergency Presence</CardDescription>
-          <CardTitle className="text-2xl font-semibold">
+          <CardTitle className="text-xl font-semibold">
             {emergencyPresent ? "Detected" : "None"}
           </CardTitle>
           <CardAction>
@@ -92,14 +92,14 @@ export function JunctionSummaryCards({
             </Badge>
           </CardAction>
         </CardHeader>
-        <CardFooter className="text-sm text-muted-foreground">
+        <CardFooter className="text-xs text-muted-foreground">
           Pre-emption overrides normal control when detected
         </CardFooter>
       </Card>
       <Card>
         <CardHeader>
           <CardDescription>Last Reason Code</CardDescription>
-          <CardTitle className="text-2xl font-semibold">
+          <CardTitle className="text-xl font-semibold">
             {decision ? REASON_LABELS[decision.reasonCode] : "—"}
           </CardTitle>
           <CardAction>
@@ -109,7 +109,7 @@ export function JunctionSummaryCards({
             </Badge>
           </CardAction>
         </CardHeader>
-        <CardFooter className="text-sm text-muted-foreground">
+        <CardFooter className="text-xs text-muted-foreground">
           {decision?.reasonDetail ?? "No override detail"}
         </CardFooter>
       </Card>

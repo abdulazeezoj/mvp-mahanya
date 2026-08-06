@@ -104,7 +104,7 @@ export default function EvaluationPage() {
                 <Card key={key}>
                   <CardHeader>
                     <CardDescription>{label}</CardDescription>
-                    <CardTitle className="text-2xl font-semibold tabular-nums">
+                    <CardTitle className="text-xl font-semibold tabular-nums">
                       {intelligentValue?.toFixed(1) ?? "—"} {unit}
                     </CardTitle>
                     <span className="text-xs text-muted-foreground">

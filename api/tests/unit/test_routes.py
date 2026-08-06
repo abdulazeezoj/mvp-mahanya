@@ -104,6 +104,22 @@ def test_get_unknown_scenario_404s(client):
     assert response.status_code == 404
 
 
+def test_get_network_geometry_returns_four_approach_lanes(client):
+    test_client, _ = client
+    response = test_client.get("/api/scenarios/sapon-peak/network")
+    assert response.status_code == 200
+    body = response.json()
+    directions = {lane["direction"] for lane in body["lanes"] if lane["kind"] == "in"}
+    assert directions == {"north", "south", "east", "west"}
+    assert body["bounds"]["maxX"] > body["bounds"]["minX"]
+
+
+def test_get_network_geometry_unknown_scenario_404s(client):
+    test_client, _ = client
+    response = test_client.get("/api/scenarios/does-not-exist/network")
+    assert response.status_code == 404
+
+
 def test_controls_run_pause_step_reset_lifecycle(client):
     test_client, registry = client
 

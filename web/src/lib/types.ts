@@ -32,6 +32,14 @@ export interface ApproachState {
   hasEmergencyVehicle: boolean;
 }
 
+export interface VehiclePosition {
+  vehicleId: string;
+  x: number;
+  y: number;
+  angleDeg: number;
+  isEmergency: boolean;
+}
+
 export interface TrafficState {
   scenarioId: string;
   tick: number;
@@ -39,6 +47,29 @@ export interface TrafficState {
   approaches: TrafficDirection<ApproachState>;
   activePhase: Phase;
   elapsedPhaseTimeSec: number;
+  vehicles: VehiclePosition[];
+}
+
+export type LaneKind = "in" | "out";
+
+export interface LaneGeometry {
+  id: string;
+  edgeId: string;
+  direction: ApproachDirection;
+  kind: LaneKind;
+  shape: [number, number][];
+}
+
+export interface NetworkBounds {
+  minX: number;
+  minY: number;
+  maxX: number;
+  maxY: number;
+}
+
+export interface NetworkGeometry {
+  bounds: NetworkBounds;
+  lanes: LaneGeometry[];
 }
 
 export interface PhaseRecommendation {

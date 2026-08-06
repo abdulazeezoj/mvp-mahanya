@@ -41,7 +41,7 @@ export function DecisionComparisonCard({
             sole authority over what's applied.
           </CardDescription>
         </CardHeader>
-        <CardContent className="text-sm text-muted-foreground">
+        <CardContent className="text-xs text-muted-foreground">
           No decision recorded yet — run the scenario from the Scenarios page.
         </CardContent>
       </Card>
@@ -63,7 +63,7 @@ export function DecisionComparisonCard({
             <span className="text-xs text-muted-foreground">
               Model recommendation
             </span>
-            <span className="text-lg font-semibold">
+            <span className="text-base font-semibold">
               {decision.recommendation
                 ? decision.recommendation.recommendedPhase
                 : "bypassed (emergency pre-emption)"}
@@ -79,7 +79,7 @@ export function DecisionComparisonCard({
             <span className="text-xs text-muted-foreground">
               Scheduler applied
             </span>
-            <span className="text-lg font-semibold">
+            <span className="text-base font-semibold">
               {decision.appliedPhase}
             </span>
             <span className="text-xs text-muted-foreground">
@@ -92,7 +92,7 @@ export function DecisionComparisonCard({
             {decision.reasonCode}
           </Badge>
           {decision.reasonDetail && (
-            <span className="text-sm text-muted-foreground">
+            <span className="text-xs text-muted-foreground">
               {decision.reasonDetail}
             </span>
           )}

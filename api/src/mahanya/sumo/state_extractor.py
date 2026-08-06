@@ -10,7 +10,14 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Protocol
 
-from mahanya.schemas import ApproachDirection, ApproachState, Phase, TrafficDirection, TrafficState
+from mahanya.schemas import (
+    ApproachDirection,
+    ApproachState,
+    Phase,
+    TrafficDirection,
+    TrafficState,
+    VehiclePosition,
+)
 
 IN_EDGE_BY_DIRECTION: dict[ApproachDirection, str] = {
     "north": "north_in",
@@ -28,7 +35,10 @@ class TraciEdgeApi(Protocol):
 
 
 class TraciVehicleApi(Protocol):
+    def getIDList(self) -> list[str]: ...
     def getVehicleClass(self, vehicle_id: str) -> str: ...
+    def getPosition(self, vehicle_id: str) -> tuple[float, float]: ...
+    def getAngle(self, vehicle_id: str) -> float: ...
 
 
 class TraciConnectionLike(Protocol):
@@ -53,6 +63,18 @@ def extract_traffic_state(
             waiting_time_sec=conn.edge.getWaitingTime(edge_id),
             has_emergency_vehicle=has_emergency,
         )
+    vehicles: list[VehiclePosition] = []
+    for vehicle_id in conn.vehicle.getIDList():
+        x, y = conn.vehicle.getPosition(vehicle_id)
+        vehicles.append(
+            VehiclePosition(
+                vehicle_id=vehicle_id,
+                x=x,
+                y=y,
+                angle_deg=conn.vehicle.getAngle(vehicle_id),
+                is_emergency=conn.vehicle.getVehicleClass(vehicle_id) == "emergency",
+            )
+        )
     return TrafficState(
         scenario_id=scenario_id,
         tick=tick,
@@ -60,4 +82,5 @@ def extract_traffic_state(
         approaches=TrafficDirection(**approaches),
         active_phase=active_phase,
         elapsed_phase_time_sec=elapsed_phase_time_sec,
+        vehicles=vehicles,
     )
