@@ -35,7 +35,10 @@ export function DashboardHeader() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbPage className="text-base font-medium text-foreground">
+              <BreadcrumbPage
+                className="text-base font-medium text-foreground"
+                suppressHydrationWarning
+              >
                 {title}
               </BreadcrumbPage>
             </BreadcrumbItem>

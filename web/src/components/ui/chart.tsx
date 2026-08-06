@@ -360,11 +360,10 @@ function getPayloadConfigFromPayload(
 }
 
 export {
-    ChartContainer,
-    ChartLegend,
-    ChartLegendContent,
-    ChartStyle,
-    ChartTooltip,
-    ChartTooltipContent
+  ChartContainer,
+  ChartLegend,
+  ChartLegendContent,
+  ChartStyle,
+  ChartTooltip,
+  ChartTooltipContent,
 };
-

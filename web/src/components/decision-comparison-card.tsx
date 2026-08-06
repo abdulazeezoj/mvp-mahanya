@@ -25,10 +25,28 @@ const REASON_VARIANT: Record<
 export function DecisionComparisonCard({
   decision,
 }: {
-  decision: SchedulerDecision;
+  decision: SchedulerDecision | null;
 }) {
   const matched =
+    decision?.recommendation != null &&
     decision.recommendation.recommendedPhase === decision.appliedPhase;
+
+  if (!decision) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Model vs. Scheduler</CardTitle>
+          <CardDescription>
+            The model's recommendation is advisory only — the scheduler is the
+            sole authority over what's applied.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="text-sm text-muted-foreground">
+          No decision recorded yet — run the scenario from the Scenarios page.
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -46,10 +64,14 @@ export function DecisionComparisonCard({
               Model recommendation
             </span>
             <span className="text-lg font-semibold">
-              {decision.recommendation.recommendedPhase}
+              {decision.recommendation
+                ? decision.recommendation.recommendedPhase
+                : "bypassed (emergency pre-emption)"}
             </span>
             <span className="text-xs text-muted-foreground">
-              {Math.round(decision.recommendation.confidence * 100)}% confidence
+              {decision.recommendation
+                ? `${Math.round(decision.recommendation.confidence * 100)}% confidence`
+                : " "}
             </span>
           </div>
           <ArrowRightIcon className="size-5 shrink-0 text-muted-foreground" />
