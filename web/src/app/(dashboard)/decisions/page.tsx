@@ -35,8 +35,8 @@ export default function DecisionsPage() {
           <AlertTitle>No scenario selected</AlertTitle>
           <AlertDescription>
             Choose and run a scenario from the{" "}
-            <Link href="/scenarios" className="underline">
-              Scenarios
+            <Link href="/" className="underline">
+              Live State
             </Link>{" "}
             page to see its decision log here.
           </AlertDescription>

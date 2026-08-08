@@ -5,7 +5,6 @@ import {
   GaugeIcon,
   ListChecksIcon,
   MapPinIcon,
-  PlayCircleIcon,
   TrafficSignalIcon,
 } from "@phosphor-icons/react";
 import Link from "next/link";
@@ -34,7 +33,6 @@ const navMain = [
   { title: "Live State", url: "/", icon: <GaugeIcon /> },
   { title: "Decision Log", url: "/decisions", icon: <ListChecksIcon /> },
   { title: "Evaluation", url: "/evaluation", icon: <ChartBarIcon /> },
-  { title: "Scenarios", url: "/scenarios", icon: <PlayCircleIcon /> },
 ];
 
 export function SidebarMain({

@@ -123,16 +123,39 @@ export function JunctionSimulationView({
           positions
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col gap-3">
         {!geometry ? (
           <p className="text-xs text-muted-foreground">
             Loading junction geometry…
           </p>
         ) : (
-          <JunctionSvg geometry={geometry} trafficState={trafficState} />
+          <>
+            <JunctionSvg geometry={geometry} trafficState={trafficState} />
+            <VehicleLegend />
+          </>
         )}
       </CardContent>
     </Card>
+  );
+}
+
+function VehicleLegend() {
+  return (
+    <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
+      <div className="flex items-center gap-1.5">
+        <svg viewBox="-10 -10 20 20" className="size-3.5 text-foreground/70">
+          <polygon points={carPolygonPoints(8)} fill="currentColor" />
+        </svg>
+        Vehicle
+      </div>
+      <div className="flex items-center gap-1.5">
+        <svg viewBox="-10 -10 20 20" className="size-3.5">
+          <polygon points={carPolygonPoints(8)} fill="#ef4444" />
+          <circle cx={0} cy={-1.2} r={2.2} fill="#3b82f6" />
+        </svg>
+        Emergency vehicle
+      </div>
+    </div>
   );
 }
 
@@ -187,7 +210,7 @@ function JunctionSvg({
   return (
     <svg
       viewBox={`0 0 ${width} ${height}`}
-      className="aspect-square w-full max-w-md rounded-lg border border-border bg-muted/30"
+      className="aspect-square w-full max-w-3xl rounded-lg border border-border bg-muted/30"
       role="img"
       aria-label="Live junction simulation"
     >

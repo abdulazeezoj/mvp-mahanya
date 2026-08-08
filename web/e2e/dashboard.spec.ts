@@ -75,10 +75,10 @@ test.beforeEach(async ({ page, context }) => {
   await mockApi(page);
 });
 
-test("scenarios page lists scenarios from the API and can run one", async ({
+test("live state page lists scenarios from the API and can run one", async ({
   page,
 }) => {
-  await page.goto("/scenarios");
+  await page.goto("/");
 
   await expect(page.getByText("Sapon Under-bridge — Peak Hour")).toBeVisible();
   await expect(page.getByText("Sapon Under-bridge — Off-Peak")).toBeVisible();
@@ -119,9 +119,12 @@ test("evaluation page runs a comparison and shows both controllers", async ({
   await expect(page.getByText(/Fixed-time baseline: 35.2 s/)).toBeVisible();
 });
 
-test("live state page prompts to select a scenario when none is chosen", async ({
+test("live state page shows the scenario picker and an empty state when none is chosen", async ({
   page,
 }) => {
   await page.goto("/");
-  await expect(page.getByText(/no scenario selected/i)).toBeVisible();
+  await expect(page.getByText("Sapon Under-bridge — Peak Hour")).toBeVisible();
+  await expect(
+    page.getByText(/no live state yet — select and run/i),
+  ).toBeVisible();
 });

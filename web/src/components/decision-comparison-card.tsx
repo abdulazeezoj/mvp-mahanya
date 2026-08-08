@@ -44,7 +44,7 @@ export function DecisionComparisonCard({
           </CardDescription>
         </CardHeader>
         <CardContent className="text-xs text-muted-foreground">
-          No decision recorded yet — run the scenario from the Scenarios page.
+          No decision recorded yet — select and run a scenario above.
         </CardContent>
       </Card>
     );

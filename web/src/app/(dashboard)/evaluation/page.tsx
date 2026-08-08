@@ -69,8 +69,8 @@ export default function EvaluationPage() {
           <AlertTitle>No scenario selected</AlertTitle>
           <AlertDescription>
             Choose a scenario from the{" "}
-            <Link href="/scenarios" className="underline">
-              Scenarios
+            <Link href="/" className="underline">
+              Live State
             </Link>{" "}
             page, then run an evaluation here.
           </AlertDescription>
