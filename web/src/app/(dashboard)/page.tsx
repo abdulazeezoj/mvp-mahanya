@@ -5,6 +5,7 @@ import { ApproachStateGrid } from "@/components/approach-state-grid";
 import { DecisionComparisonCard } from "@/components/decision-comparison-card";
 import { JunctionSimulationView } from "@/components/junction-simulation-view";
 import { JunctionSummaryCards } from "@/components/junction-summary-cards";
+import { PageHeader } from "@/components/page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useNetworkGeometry } from "@/hooks/use-network-geometry";
 import { useScenarioStream } from "@/hooks/use-scenario-stream";
@@ -17,6 +18,10 @@ export default function LiveStatePage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4">
+      <PageHeader
+        title="Live State"
+        description="Real-time signal phase, queues, and vehicle positions at the Sapon Under-bridge Junction."
+      />
       {!selectedId ? (
         <Alert>
           <AlertTitle>No scenario selected</AlertTitle>

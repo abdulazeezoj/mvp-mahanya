@@ -26,7 +26,9 @@ export function ApproachStateGrid({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Approach State</CardTitle>
+        <CardTitle className="font-heading text-base font-semibold">
+          Approach State
+        </CardTitle>
         <CardDescription>
           Per-direction vehicle counts and queue lengths
         </CardDescription>

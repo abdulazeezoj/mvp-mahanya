@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@/components/page-header";
 import { ScenarioControls } from "@/components/scenario-controls";
 import { ScenarioList } from "@/components/scenario-list";
 import { usePolling } from "@/hooks/use-polling";
@@ -20,6 +21,10 @@ export default function ScenariosPage() {
 
   return (
     <div className="flex flex-1 flex-col gap-4">
+      <PageHeader
+        title="Scenarios"
+        description="Select, run, and monitor SUMO traffic scenarios."
+      />
       <ScenarioControls
         scenarioId={selectedId}
         status={selected?.status}

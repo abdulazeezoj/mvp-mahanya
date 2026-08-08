@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatePresence, motion } from "motion/react";
 import * as React from "react";
 import {
   Card,
@@ -67,6 +68,31 @@ function junctionCenter(geometry: NetworkGeometry): Point {
   return { x: sum.x / inner.length, y: sum.y / inner.length };
 }
 
+function laneCenterlinePath(
+  lane: LaneGeometry,
+  toSvg: (pt: [number, number]) => [number, number],
+): string {
+  return lane.shape
+    .map((pt, i) => `${i === 0 ? "M" : "L"} ${toSvg(pt).join(",")}`)
+    .join(" ");
+}
+
+function carPolygonPoints(size: number): string {
+  const halfWidth = size * 0.62;
+  const nose = -size;
+  const shoulder = -size * 0.5;
+  const tail = size * 0.75;
+  return [
+    [0, nose],
+    [halfWidth, shoulder],
+    [halfWidth, tail],
+    [-halfWidth, tail],
+    [-halfWidth, shoulder],
+  ]
+    .map((p) => p.join(","))
+    .join(" ");
+}
+
 export function JunctionSimulationView({
   geometry,
   trafficState,
@@ -77,7 +103,21 @@ export function JunctionSimulationView({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Live Junction</CardTitle>
+        <CardTitle className="flex items-center gap-2 font-heading text-base font-semibold">
+          Live Junction
+          {trafficState && (
+            <motion.span
+              aria-hidden
+              className="inline-block size-1.5 rounded-full bg-emerald-500"
+              animate={{ opacity: [1, 0.35, 1] }}
+              transition={{
+                duration: 1.6,
+                repeat: Number.POSITIVE_INFINITY,
+                ease: "easeInOut",
+              }}
+            />
+          )}
+        </CardTitle>
         <CardDescription>
           The Sapon Under-bridge Junction, rendered from live SUMO vehicle
           positions
@@ -151,6 +191,13 @@ function JunctionSvg({
       role="img"
       aria-label="Live junction simulation"
     >
+      <defs>
+        <radialGradient id="junction-plaza-gradient" cx="50%" cy="50%" r="50%">
+          <stop offset="0%" stopColor="currentColor" stopOpacity="0.28" />
+          <stop offset="100%" stopColor="currentColor" stopOpacity="0.06" />
+        </radialGradient>
+      </defs>
+
       {geometry.lanes.map((lane) => (
         <polyline
           key={lane.id}
@@ -163,48 +210,113 @@ function JunctionSvg({
         />
       ))}
 
+      {geometry.lanes.map((lane) => (
+        <path
+          key={`${lane.id}-centerline`}
+          d={laneCenterlinePath(lane, toSvg)}
+          fill="none"
+          stroke="currentColor"
+          className="text-background/70"
+          strokeWidth={roadWidth * 0.06}
+          strokeDasharray={`${roadWidth * 0.4} ${roadWidth * 0.5}`}
+        />
+      ))}
+
       <circle
         cx={centerSvg[0]}
         cy={centerSvg[1]}
         r={plazaRadius}
-        className="fill-muted-foreground/20"
+        fill="url(#junction-plaza-gradient)"
+        className="text-muted-foreground"
       />
 
       {DIRECTIONS.map((direction) => {
         const pos = lightPositions[direction];
         if (!pos) return null;
         const state = signalStateFor(direction, trafficState?.activePhase);
+        const isActive = state !== "red";
         return (
-          <circle
-            key={direction}
-            cx={pos[0]}
-            cy={pos[1]}
-            r={lightRadius}
-            fill={SIGNAL_COLOR[state]}
-            stroke="currentColor"
-            className="text-background"
-            strokeWidth={lightRadius * 0.3}
-          />
-        );
-      })}
-
-      {trafficState?.vehicles.map((vehicle) => {
-        const [sx, sy] = toSvg([vehicle.x, vehicle.y]);
-        const size = vehicle.isEmergency ? extent * 0.022 : extent * 0.016;
-        return (
-          <g
-            key={vehicle.vehicleId}
-            transform={`translate(${sx} ${sy}) rotate(${vehicle.angleDeg})`}
-            style={{ transition: "transform 0.9s linear" }}
-          >
-            <polygon
-              points={`0,${-size} ${size * 0.65},${size * 0.6} ${-size * 0.65},${size * 0.6}`}
-              fill={vehicle.isEmergency ? "#ef4444" : "currentColor"}
-              className={vehicle.isEmergency ? undefined : "text-foreground/70"}
+          <g key={direction}>
+            {isActive && (
+              <motion.circle
+                cx={pos[0]}
+                cy={pos[1]}
+                r={lightRadius * 2.2}
+                fill={SIGNAL_COLOR[state]}
+                style={{ filter: "blur(6px)" }}
+                animate={{ opacity: [0.5, 0.85, 0.5] }}
+                transition={{
+                  duration: 1.2,
+                  repeat: Number.POSITIVE_INFINITY,
+                  ease: "easeInOut",
+                }}
+              />
+            )}
+            <motion.circle
+              cx={pos[0]}
+              cy={pos[1]}
+              r={lightRadius}
+              animate={{ fill: SIGNAL_COLOR[state] }}
+              transition={{ duration: 0.4 }}
+              stroke="currentColor"
+              className="text-background"
+              strokeWidth={lightRadius * 0.3}
             />
           </g>
         );
       })}
+
+      <AnimatePresence>
+        {trafficState?.vehicles.map((vehicle) => {
+          const [sx, sy] = toSvg([vehicle.x, vehicle.y]);
+          const size = vehicle.isEmergency ? extent * 0.024 : extent * 0.017;
+          return (
+            <motion.g
+              key={vehicle.vehicleId}
+              initial={{
+                opacity: 0,
+                scale: 0.4,
+                x: sx,
+                y: sy,
+                rotate: vehicle.angleDeg,
+              }}
+              animate={{
+                opacity: 1,
+                scale: 1,
+                x: sx,
+                y: sy,
+                rotate: vehicle.angleDeg,
+              }}
+              exit={{ opacity: 0, scale: 0.4 }}
+              transition={{ duration: 0.9, ease: "easeInOut" }}
+            >
+              <polygon
+                points={carPolygonPoints(size)}
+                fill={vehicle.isEmergency ? "#ef4444" : "currentColor"}
+                className={
+                  vehicle.isEmergency ? undefined : "text-foreground/70"
+                }
+              />
+              {vehicle.isEmergency && (
+                <motion.circle
+                  cx={0}
+                  cy={-size * 0.15}
+                  r={size * 0.28}
+                  animate={{
+                    fill: ["#ef4444", "#3b82f6", "#ef4444"],
+                    opacity: [1, 0.5, 1],
+                  }}
+                  transition={{
+                    duration: 0.6,
+                    repeat: Number.POSITIVE_INFINITY,
+                    ease: "easeInOut",
+                  }}
+                />
+              )}
+            </motion.g>
+          );
+        })}
+      </AnimatePresence>
     </svg>
   );
 }

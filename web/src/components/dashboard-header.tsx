@@ -36,7 +36,7 @@ export function DashboardHeader() {
           <BreadcrumbList>
             <BreadcrumbItem>
               <BreadcrumbPage
-                className="text-sm font-medium text-foreground"
+                className="font-heading text-sm font-medium text-foreground"
                 suppressHydrationWarning
               >
                 {title}

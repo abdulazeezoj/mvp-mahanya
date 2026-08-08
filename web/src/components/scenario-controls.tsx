@@ -54,7 +54,9 @@ export function ScenarioControls({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Run Controls</CardTitle>
+        <CardTitle className="font-heading text-base font-semibold">
+          Run Controls
+        </CardTitle>
         <CardDescription>
           {scenarioId
             ? `Selected scenario: ${scenarioId}${status ? ` (${status})` : ""}`

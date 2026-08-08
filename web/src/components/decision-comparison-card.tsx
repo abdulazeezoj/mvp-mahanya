@@ -35,7 +35,9 @@ export function DecisionComparisonCard({
     return (
       <Card>
         <CardHeader>
-          <CardTitle>Model vs. Scheduler</CardTitle>
+          <CardTitle className="font-heading text-base font-semibold">
+            Model vs. Scheduler
+          </CardTitle>
           <CardDescription>
             The model's recommendation is advisory only — the scheduler is the
             sole authority over what's applied.
@@ -51,7 +53,9 @@ export function DecisionComparisonCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Model vs. Scheduler</CardTitle>
+        <CardTitle className="font-heading text-base font-semibold">
+          Model vs. Scheduler
+        </CardTitle>
         <CardDescription>
           The model's recommendation is advisory only — the scheduler is the
           sole authority over what's applied.

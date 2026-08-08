@@ -75,7 +75,7 @@ export function SidebarFooter() {
     <SidebarFooterContainer>
       <Card className="gap-2 py-4 shadow-none">
         <CardHeader className="gap-1.5 px-4">
-          <CardTitle className="flex items-center gap-1.5 text-xs">
+          <CardTitle className="flex items-center gap-1.5 text-xs font-heading font-semibold">
             <MapPinIcon className="size-4 shrink-0" />
             Sapon Under-bridge Junction
           </CardTitle>
@@ -105,7 +105,9 @@ export function DashboardSidebar({
               render={<a href="/" />}
             >
               <TrafficSignalIcon className="size-5!" />
-              <span className="text-sm font-semibold">MaHanya</span>
+              <span className="font-heading text-sm font-semibold tracking-tight">
+                MaHanya
+              </span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>
