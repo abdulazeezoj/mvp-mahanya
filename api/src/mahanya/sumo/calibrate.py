@@ -13,8 +13,9 @@ from pathlib import Path
 from xml.etree import ElementTree as ET
 
 from mahanya.data.distribution_fit import FitResult
+from mahanya.schemas import ApproachDirection
 
-DIRECTION_ROUTE = {
+DIRECTION_ROUTE: dict[ApproachDirection, tuple[str, str]] = {
     "north": ("north_in", "south_out"),
     "south": ("south_in", "north_out"),
     "east": ("east_in", "west_out"),

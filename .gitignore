@@ -24,6 +24,7 @@ data
 !/api/data/
 /api/data/*
 !/api/data/raw/
+!/api/src/mahanya/data/
 
 models
 
