@@ -18,17 +18,32 @@ describe("JunctionSimulationView", () => {
     );
   });
 
-  it("renders one marker per live vehicle", () => {
+  it("renders one marker per live vehicle, regardless of vehicle type", () => {
     const geometry = makeNetworkGeometry();
     const state = makeTrafficState({
       activePhase: "NORTH_GREEN",
       vehicles: [
-        { vehicleId: "v1", x: 148, y: 200, angleDeg: 0, isEmergency: false },
-        { vehicleId: "v2", x: 152, y: 180, angleDeg: 180, isEmergency: true },
+        { vehicleId: "v1", x: 148, y: 200, angleDeg: 0, vehicleType: "car" },
+        {
+          vehicleId: "v2",
+          x: 152,
+          y: 180,
+          angleDeg: 180,
+          vehicleType: "emergency",
+        },
+        {
+          vehicleId: "v3",
+          x: 140,
+          y: 190,
+          angleDeg: 90,
+          vehicleType: "motorcycle",
+        },
+        { vehicleId: "v4", x: 160, y: 170, angleDeg: 270, vehicleType: "bus" },
+        { vehicleId: "v5", x: 130, y: 210, angleDeg: 45, vehicleType: "truck" },
       ],
     });
     render(<JunctionSimulationView geometry={geometry} trafficState={state} />);
     const svg = screen.getByRole("img", { name: /live junction simulation/i });
-    expect(svg.querySelectorAll("polygon")).toHaveLength(2);
+    expect(svg.querySelectorAll("polygon")).toHaveLength(5);
   });
 });

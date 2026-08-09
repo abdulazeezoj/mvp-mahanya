@@ -68,6 +68,10 @@ ScenarioStatus = Literal["idle", "running", "paused", "completed"]
 
 ControllerKind = Literal["intelligent", "fixed-time"]
 
+#: SUMO vType ids used across the calibrated network (see
+#: mahanya.sumo.calibrate.VEHICLE_TYPE_MIX for the civilian-mix split).
+VehicleType = Literal["car", "motorcycle", "bus", "truck", "emergency"]
+
 
 class CamelModel(BaseModel):
     model_config = ConfigDict(alias_generator=to_camel, populate_by_name=True)
@@ -109,7 +113,7 @@ class VehiclePosition(CamelModel):
     x: float
     y: float
     angle_deg: float = Field(ge=0, le=360)
-    is_emergency: bool = False
+    vehicle_type: VehicleType
 
 
 class TrafficState(CamelModel):

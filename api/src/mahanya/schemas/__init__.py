@@ -23,6 +23,7 @@ from mahanya.schemas.traffic import (
     TrafficDirection,
     TrafficState,
     VehiclePosition,
+    VehicleType,
 )
 
 __all__ = [
@@ -46,4 +47,5 @@ __all__ = [
     "TrafficDirection",
     "TrafficState",
     "VehiclePosition",
+    "VehicleType",
 ]

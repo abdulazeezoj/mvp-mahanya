@@ -39,6 +39,7 @@ class TraciVehicleApi(Protocol):
     def getVehicleClass(self, vehicle_id: str) -> str: ...
     def getPosition(self, vehicle_id: str) -> tuple[float, float]: ...
     def getAngle(self, vehicle_id: str) -> float: ...
+    def getTypeID(self, vehicle_id: str) -> str: ...
 
 
 class TraciConnectionLike(Protocol):
@@ -72,7 +73,10 @@ def extract_traffic_state(
                 x=x,
                 y=y,
                 angle_deg=conn.vehicle.getAngle(vehicle_id),
-                is_emergency=conn.vehicle.getVehicleClass(vehicle_id) == "emergency",
+                # SUMO vType ids are exactly the VehicleType values by
+                # construction (mahanya.sumo.calibrate defines the vTypes),
+                # so no re-derivation from vClass is needed here.
+                vehicle_type=conn.vehicle.getTypeID(vehicle_id),
             )
         )
     return TrafficState(

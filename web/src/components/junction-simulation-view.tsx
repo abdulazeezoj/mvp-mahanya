@@ -15,14 +15,30 @@ import type {
   NetworkGeometry,
   Phase,
   TrafficState,
+  VehicleType,
 } from "@/lib/types";
 
 const DIRECTIONS: ApproachDirection[] = ["north", "south", "east", "west"];
+const VEHICLE_TYPES: VehicleType[] = [
+  "car",
+  "motorcycle",
+  "bus",
+  "truck",
+  "emergency",
+];
 
 const SIGNAL_COLOR: Record<"red" | "yellow" | "green", string> = {
   red: "#ef4444",
   yellow: "#eab308",
   green: "#22c55e",
+};
+
+const VEHICLE_LABEL: Record<VehicleType, string> = {
+  car: "Car",
+  motorcycle: "Motorcycle",
+  bus: "Bus",
+  truck: "Truck",
+  emergency: "Emergency vehicle",
 };
 
 function signalStateFor(
@@ -77,21 +93,90 @@ function laneCenterlinePath(
     .join(" ");
 }
 
+function polygonPoints(points: [number, number][]): string {
+  return points.map((p) => p.join(",")).join(" ");
+}
+
 function carPolygonPoints(size: number): string {
   const halfWidth = size * 0.62;
   const nose = -size;
   const shoulder = -size * 0.5;
   const tail = size * 0.75;
-  return [
+  return polygonPoints([
     [0, nose],
     [halfWidth, shoulder],
     [halfWidth, tail],
     [-halfWidth, tail],
     [-halfWidth, shoulder],
-  ]
-    .map((p) => p.join(","))
-    .join(" ");
+  ]);
 }
+
+function motorcyclePolygonPoints(size: number): string {
+  const halfWidth = size * 0.3;
+  const nose = -size;
+  const shoulder = -size * 0.1;
+  const tail = size * 0.8;
+  return polygonPoints([
+    [0, nose],
+    [halfWidth, shoulder],
+    [halfWidth * 0.7, tail],
+    [-halfWidth * 0.7, tail],
+    [-halfWidth, shoulder],
+  ]);
+}
+
+function busPolygonPoints(size: number): string {
+  const halfWidth = size * 0.55;
+  const nose = -size;
+  const shoulder = -size * 0.7;
+  const tail = size * 0.9;
+  return polygonPoints([
+    [-halfWidth * 0.75, nose],
+    [halfWidth * 0.75, nose],
+    [halfWidth, shoulder],
+    [halfWidth, tail],
+    [-halfWidth, tail],
+    [-halfWidth, shoulder],
+  ]);
+}
+
+function truckPolygonPoints(size: number): string {
+  const cabHalf = size * 0.42;
+  const boxHalf = size * 0.52;
+  const nose = -size;
+  const cabEnd = -size * 0.45;
+  const tail = size * 0.95;
+  return polygonPoints([
+    [-cabHalf, nose],
+    [cabHalf, nose],
+    [cabHalf, cabEnd],
+    [boxHalf, cabEnd],
+    [boxHalf, tail],
+    [-boxHalf, tail],
+    [-boxHalf, cabEnd],
+    [-cabHalf, cabEnd],
+  ]);
+}
+
+const VEHICLE_SHAPE: Record<VehicleType, (size: number) => string> = {
+  car: carPolygonPoints,
+  motorcycle: motorcyclePolygonPoints,
+  bus: busPolygonPoints,
+  truck: truckPolygonPoints,
+  emergency: carPolygonPoints,
+};
+
+const VEHICLE_SIZE_SCALE: Record<VehicleType, number> = {
+  car: 1,
+  motorcycle: 0.6,
+  bus: 2.1,
+  truck: 1.9,
+  emergency: 1.25,
+};
+
+const VEHICLE_FILL: Partial<Record<VehicleType, string>> = {
+  emergency: "#ef4444",
+};
 
 export function JunctionSimulationView({
   geometry,
@@ -142,19 +227,25 @@ export function JunctionSimulationView({
 function VehicleLegend() {
   return (
     <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground">
-      <div className="flex items-center gap-1.5">
-        <svg viewBox="-10 -10 20 20" className="size-3.5 text-foreground/70">
-          <polygon points={carPolygonPoints(8)} fill="currentColor" />
-        </svg>
-        Vehicle
-      </div>
-      <div className="flex items-center gap-1.5">
-        <svg viewBox="-10 -10 20 20" className="size-3.5">
-          <polygon points={carPolygonPoints(8)} fill="#ef4444" />
-          <circle cx={0} cy={-1.2} r={2.2} fill="#3b82f6" />
-        </svg>
-        Emergency vehicle
-      </div>
+      {VEHICLE_TYPES.map((type) => (
+        <div key={type} className="flex items-center gap-1.5">
+          <svg
+            viewBox="-10 -10 20 20"
+            className={
+              type === "emergency" ? "size-3.5" : "size-3.5 text-foreground/70"
+            }
+          >
+            <polygon
+              points={VEHICLE_SHAPE[type](8 * VEHICLE_SIZE_SCALE[type] * 0.5)}
+              fill={VEHICLE_FILL[type] ?? "currentColor"}
+            />
+            {type === "emergency" && (
+              <circle cx={0} cy={-1.2} r={2.2} fill="#3b82f6" />
+            )}
+          </svg>
+          {VEHICLE_LABEL[type]}
+        </div>
+      ))}
     </div>
   );
 }
@@ -170,7 +261,7 @@ function JunctionSvg({
   const width = bounds.maxX - bounds.minX;
   const height = bounds.maxY - bounds.minY;
   const extent = Math.max(width, height);
-  const roadWidth = extent * 0.05;
+  const roadWidth = extent * 0.08;
   const plazaRadius = extent * 0.07;
   const lightRadius = extent * 0.02;
 
@@ -186,26 +277,40 @@ function JunctionSvg({
   const centerSvg = toSvg([center.x, center.y]);
 
   const lightPositions = React.useMemo(() => {
-    const positions: Partial<Record<ApproachDirection, [number, number]>> = {};
+    const positions: Partial<
+      Record<
+        ApproachDirection,
+        { light: [number, number]; stop: [number, number] }
+      >
+    > = {};
     for (const direction of DIRECTIONS) {
       const inLane = geometry.lanes.find(
         (lane) => lane.direction === direction && lane.kind === "in",
       );
-      const outer = inLane ? outerEndpoint(inLane) : undefined;
-      if (!outer) continue;
-      const dx = outer[0] - center.x;
-      const dy = outer[1] - center.y;
-      const length = Math.hypot(dx, dy) || 1;
-      const ux = dx / length;
-      const uy = dy / length;
-      const distance = plazaRadius + lightRadius * 2.5;
-      positions[direction] = toSvg([
-        center.x + ux * distance,
-        center.y + uy * distance,
-      ]);
+      if (!inLane) continue;
+      const outer = outerEndpoint(inLane);
+      const inner = innerEndpoint(inLane);
+      if (!outer || !inner) continue;
+
+      const tx = inner[0] - outer[0];
+      const ty = inner[1] - outer[1];
+      const length = Math.hypot(tx, ty) || 1;
+      const dx = tx / length;
+      const dy = ty / length;
+
+      const px = -dy;
+      const py = dx;
+      const lateralOffset = roadWidth * 1.1;
+      const setback = roadWidth * 0.4;
+
+      const lightSumo: [number, number] = [
+        inner[0] + px * lateralOffset - dx * setback,
+        inner[1] + py * lateralOffset - dy * setback,
+      ];
+      positions[direction] = { light: toSvg(lightSumo), stop: toSvg(inner) };
     }
     return positions;
-  }, [geometry, center, plazaRadius, lightRadius, toSvg]);
+  }, [geometry, roadWidth, toSvg]);
 
   return (
     <svg
@@ -260,10 +365,19 @@ function JunctionSvg({
         const isActive = state !== "red";
         return (
           <g key={direction}>
+            <line
+              x1={pos.stop[0]}
+              y1={pos.stop[1]}
+              x2={pos.light[0]}
+              y2={pos.light[1]}
+              stroke="currentColor"
+              className="text-muted-foreground/50"
+              strokeWidth={lightRadius * 0.15}
+            />
             {isActive && (
               <motion.circle
-                cx={pos[0]}
-                cy={pos[1]}
+                cx={pos.light[0]}
+                cy={pos.light[1]}
                 r={lightRadius * 2.2}
                 fill={SIGNAL_COLOR[state]}
                 style={{ filter: "blur(6px)" }}
@@ -276,8 +390,8 @@ function JunctionSvg({
               />
             )}
             <motion.circle
-              cx={pos[0]}
-              cy={pos[1]}
+              cx={pos.light[0]}
+              cy={pos.light[1]}
               r={lightRadius}
               animate={{ fill: SIGNAL_COLOR[state] }}
               transition={{ duration: 0.4 }}
@@ -292,7 +406,8 @@ function JunctionSvg({
       <AnimatePresence>
         {trafficState?.vehicles.map((vehicle) => {
           const [sx, sy] = toSvg([vehicle.x, vehicle.y]);
-          const size = vehicle.isEmergency ? extent * 0.024 : extent * 0.017;
+          const size = extent * 0.017 * VEHICLE_SIZE_SCALE[vehicle.vehicleType];
+          const isEmergency = vehicle.vehicleType === "emergency";
           return (
             <motion.g
               key={vehicle.vehicleId}
@@ -314,13 +429,11 @@ function JunctionSvg({
               transition={{ duration: 0.9, ease: "easeInOut" }}
             >
               <polygon
-                points={carPolygonPoints(size)}
-                fill={vehicle.isEmergency ? "#ef4444" : "currentColor"}
-                className={
-                  vehicle.isEmergency ? undefined : "text-foreground/70"
-                }
+                points={VEHICLE_SHAPE[vehicle.vehicleType](size)}
+                fill={VEHICLE_FILL[vehicle.vehicleType] ?? "currentColor"}
+                className={isEmergency ? undefined : "text-foreground/70"}
               />
-              {vehicle.isEmergency && (
+              {isEmergency && (
                 <motion.circle
                   cx={0}
                   cy={-size * 0.15}

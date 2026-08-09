@@ -1,13 +1,17 @@
 <?xml version='1.0' encoding='UTF-8'?>
 <routes>
-    <vType id="car" vClass="passenger" length="5" maxSpeed="16.7" accel="2.6" decel="4.5" />
+    <vType id="car" vClass="passenger" length="5" maxSpeed="16.7" accel="2.6" decel="4.5" probability="0.7" />
+    <vType id="motorcycle" vClass="motorcycle" length="2.2" maxSpeed="18.0" accel="3.5" decel="5.5" probability="0.2" />
+    <vType id="bus" vClass="bus" length="12" maxSpeed="13.0" accel="1.2" decel="3.5" probability="0.05" />
+    <vType id="truck" vClass="truck" length="8" maxSpeed="14.0" accel="1.3" decel="4.0" probability="0.05" />
+    <vTypeDistribution id="civilian" vTypes="car motorcycle bus truck" />
     <vType id="emergency" vClass="emergency" length="6" maxSpeed="20.0" accel="3.0" decel="5.0" color="1,0,0" />
-    <flow id="north_car_flow" type="car" from="north_in" to="south_out" begin="0" end="1800" period="exp(0.010648)" departLane="best" departSpeed="max" />
+    <flow id="north_civilian_flow" type="civilian" from="north_in" to="south_out" begin="0" end="1800" period="exp(0.010648)" departLane="best" departSpeed="max" />
     <flow id="north_emergency_flow" type="emergency" from="north_in" to="south_out" begin="0" end="1800" period="exp(0.001667)" departLane="best" departSpeed="max" />
-    <flow id="south_car_flow" type="car" from="south_in" to="north_out" begin="0" end="1800" period="exp(0.010556)" departLane="best" departSpeed="max" />
+    <flow id="south_civilian_flow" type="civilian" from="south_in" to="north_out" begin="0" end="1800" period="exp(0.010556)" departLane="best" departSpeed="max" />
     <flow id="south_emergency_flow" type="emergency" from="south_in" to="north_out" begin="0" end="1800" period="exp(0.001667)" departLane="best" departSpeed="max" />
-    <flow id="east_car_flow" type="car" from="east_in" to="west_out" begin="0" end="1800" period="exp(0.007315)" departLane="best" departSpeed="max" />
+    <flow id="east_civilian_flow" type="civilian" from="east_in" to="west_out" begin="0" end="1800" period="exp(0.007315)" departLane="best" departSpeed="max" />
     <flow id="east_emergency_flow" type="emergency" from="east_in" to="west_out" begin="0" end="1800" period="exp(0.001667)" departLane="best" departSpeed="max" />
-    <flow id="west_car_flow" type="car" from="west_in" to="east_out" begin="0" end="1800" period="exp(0.007222)" departLane="best" departSpeed="max" />
+    <flow id="west_civilian_flow" type="civilian" from="west_in" to="east_out" begin="0" end="1800" period="exp(0.007222)" departLane="best" departSpeed="max" />
     <flow id="west_emergency_flow" type="emergency" from="west_in" to="east_out" begin="0" end="1800" period="exp(0.001667)" departLane="best" departSpeed="max" />
 </routes>

@@ -38,6 +38,7 @@ class FakeVehicleApi:
         self.ids = ids if ids is not None else []
         self.positions: dict[str, tuple[float, float]] = {}
         self.angles: dict[str, float] = {}
+        self.type_ids: dict[str, str] = {}
 
     def getIDList(self) -> list[str]:
         return self.ids
@@ -50,6 +51,11 @@ class FakeVehicleApi:
 
     def getAngle(self, vehicle_id: str) -> float:
         return self.angles.get(vehicle_id, 0.0)
+
+    def getTypeID(self, vehicle_id: str) -> str:
+        if vehicle_id in self.type_ids:
+            return self.type_ids[vehicle_id]
+        return "emergency" if vehicle_id in self.emergency_ids else "car"
 
 
 class FakeConnection:
@@ -97,18 +103,25 @@ def test_in_edge_mapping_covers_all_four_directions():
 
 def test_extract_traffic_state_includes_network_wide_vehicle_positions():
     edge = FakeEdgeApi()
-    vehicle = FakeVehicleApi(emergency_ids={"ambulance-1"}, ids=["ambulance-1", "car-1"])
-    vehicle.positions = {"ambulance-1": (10.0, 20.0), "car-1": (30.0, 40.0)}
-    vehicle.angles = {"ambulance-1": 90.0, "car-1": 180.0}
+    vehicle = FakeVehicleApi(emergency_ids={"ambulance-1"}, ids=["ambulance-1", "car-1", "bike-1"])
+    vehicle.positions = {
+        "ambulance-1": (10.0, 20.0),
+        "car-1": (30.0, 40.0),
+        "bike-1": (50.0, 60.0),
+    }
+    vehicle.angles = {"ambulance-1": 90.0, "car-1": 180.0, "bike-1": 45.0}
+    vehicle.type_ids = {"bike-1": "motorcycle"}
     conn = FakeConnection(edge, vehicle)
 
     state = extract_traffic_state(
         conn, "s1", tick=0, active_phase="NORTH_GREEN", elapsed_phase_time_sec=0.0
     )
 
-    assert {v.vehicle_id for v in state.vehicles} == {"ambulance-1", "car-1"}
+    assert {v.vehicle_id for v in state.vehicles} == {"ambulance-1", "car-1", "bike-1"}
     ambulance = next(v for v in state.vehicles if v.vehicle_id == "ambulance-1")
     assert (ambulance.x, ambulance.y, ambulance.angle_deg) == (10.0, 20.0, 90.0)
-    assert ambulance.is_emergency is True
+    assert ambulance.vehicle_type == "emergency"
     car = next(v for v in state.vehicles if v.vehicle_id == "car-1")
-    assert car.is_emergency is False
+    assert car.vehicle_type == "car"
+    bike = next(v for v in state.vehicles if v.vehicle_id == "bike-1")
+    assert bike.vehicle_type == "motorcycle"

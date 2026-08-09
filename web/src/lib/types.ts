@@ -32,12 +32,14 @@ export interface ApproachState {
   hasEmergencyVehicle: boolean;
 }
 
+export type VehicleType = "car" | "motorcycle" | "bus" | "truck" | "emergency";
+
 export interface VehiclePosition {
   vehicleId: string;
   x: number;
   y: number;
   angleDeg: number;
-  isEmergency: boolean;
+  vehicleType: VehicleType;
 }
 
 export interface TrafficState {

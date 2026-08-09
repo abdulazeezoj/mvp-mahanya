@@ -9,7 +9,12 @@ from xml.etree import ElementTree as ET
 import pytest
 
 from mahanya.data.distribution_fit import FitResult
-from mahanya.sumo.calibrate import generate_routes, mean_arrivals_per_hour, write_sumocfg
+from mahanya.sumo.calibrate import (
+    VEHICLE_TYPE_MIX,
+    generate_routes,
+    mean_arrivals_per_hour,
+    write_sumocfg,
+)
 
 
 @pytest.fixture
@@ -51,12 +56,21 @@ def test_generate_routes_writes_one_flow_pair_per_direction(fit_results, tmp_pat
 
     root = ET.parse(output).getroot()
     flows = root.findall("flow")
-    assert len(flows) == 8  # 4 directions x (car + emergency)
-    car_flow_ids = {f.get("id") for f in flows if f.get("type") == "car"}
-    assert car_flow_ids == {f"{d}_car_flow" for d in ("north", "south", "east", "west")}
+    assert len(flows) == 8  # 4 directions x (civilian + emergency)
+    civilian_flow_ids = {f.get("id") for f in flows if f.get("type") == "civilian"}
+    assert civilian_flow_ids == {
+        f"{d}_civilian_flow" for d in ("north", "south", "east", "west")
+    }
+    emergency_flow_ids = {f.get("id") for f in flows if f.get("type") == "emergency"}
+    assert emergency_flow_ids == {f"{d}_emergency_flow" for d in ("north", "south", "east", "west")}
     for flow in flows:
         assert "period" in flow.attrib
         assert flow.get("period", "").startswith("exp(")
+
+    vtype_distributions = root.findall("vTypeDistribution")
+    assert len(vtype_distributions) == 1
+    assert vtype_distributions[0].get("id") == "civilian"
+    assert set(vtype_distributions[0].get("vTypes", "").split()) == set(VEHICLE_TYPE_MIX)
 
 
 def test_generate_routes_without_emergency_flows(fit_results, tmp_path):
@@ -67,7 +81,7 @@ def test_generate_routes_without_emergency_flows(fit_results, tmp_path):
     root = ET.parse(output).getroot()
     flows = root.findall("flow")
     assert len(flows) == 4
-    assert all(f.get("type") == "car" for f in flows)
+    assert all(f.get("type") == "civilian" for f in flows)
 
 
 def test_generate_routes_missing_period_raises(fit_results, tmp_path):
