@@ -173,6 +173,115 @@ export function crosswalkAnchors(
   return anchors;
 }
 
+export interface JunctionPavementPoint {
+  x: number;
+  y: number;
+  radius: number;
+}
+
+function rotate90(v: [number, number], ccw: boolean): [number, number] {
+  const [x, y] = v;
+  return ccw ? [-y, x] : [y, -x];
+}
+
+/** Of the two perpendiculars of each vector, pick whichever pair points most nearly the same way — i.e. the shared edge between two adjacent arms. */
+function facingPerpendiculars(
+  outwardA: [number, number],
+  outwardB: [number, number],
+): { perpA: [number, number]; perpB: [number, number] } {
+  const candidatesA: [number, number][] = [
+    rotate90(outwardA, true),
+    rotate90(outwardA, false),
+  ];
+  const candidatesB: [number, number][] = [
+    rotate90(outwardB, true),
+    rotate90(outwardB, false),
+  ];
+  let best = { perpA: candidatesA[0], perpB: candidatesB[0] };
+  let bestScore = Number.NEGATIVE_INFINITY;
+  for (const perpA of candidatesA) {
+    for (const perpB of candidatesB) {
+      const score = perpA[0] * perpB[0] + perpA[1] * perpB[1];
+      if (score > bestScore) {
+        bestScore = score;
+        best = { perpA, perpB };
+      }
+    }
+  }
+  return best;
+}
+
+/**
+ * The paved-area outline at the junction mouth: a "plus" shape following
+ * where each arm's road actually meets its neighbors, with its concave
+ * corners rounded — instead of a plain circle, which either leaves the
+ * road ribbons' square corners exposed or balloons into a roundabout-like
+ * blob unrelated to the real road edges. SUMO map space; pass through
+ * `roundShape`-style rendering with each point's own `radius`.
+ *
+ * Returns one 3-point run per approach direction (outer corner shared
+ * with the previous arm, outer corner shared with the next arm, the
+ * rounded concave notch between this arm and the next), in a consistent
+ * winding order — empty if fewer than two directions have an inbound
+ * lane, since a "junction" needs at least two roads meeting.
+ */
+export function junctionPavementOutline(
+  geometry: NetworkGeometry,
+  roadWidth: number,
+  armReach: number,
+  cornerRadius: number,
+): JunctionPavementPoint[] {
+  const center = junctionCenter(geometry);
+  const arms: { outward: [number, number]; angle: number }[] = [];
+  for (const direction of DIRECTIONS) {
+    const inLane = geometry.lanes.find(
+      (lane) => lane.direction === direction && lane.kind === "in",
+    );
+    if (!inLane) continue;
+    const outer = outerEndpoint(inLane);
+    const inner = innerEndpoint(inLane);
+    if (!outer || !inner) continue;
+    const tx = inner[0] - outer[0];
+    const ty = inner[1] - outer[1];
+    const length = Math.hypot(tx, ty) || 1;
+    // Outward: away from the junction center, the opposite of the
+    // inbound lane's into-the-junction travel direction.
+    const outward: [number, number] = [-tx / length, -ty / length];
+    arms.push({ outward, angle: Math.atan2(outward[1], outward[0]) });
+  }
+  if (arms.length < 2) return [];
+  arms.sort((a, b) => a.angle - b.angle);
+
+  const halfWidth = roadWidth / 2;
+  const notches: [number, number][] = arms.map((arm, i) => {
+    const next = arms[(i + 1) % arms.length];
+    const { perpA, perpB } = facingPerpendiculars(arm.outward, next.outward);
+    return [
+      center.x + perpA[0] * halfWidth + perpB[0] * halfWidth,
+      center.y + perpA[1] * halfWidth + perpB[1] * halfWidth,
+    ];
+  });
+
+  const points: JunctionPavementPoint[] = [];
+  for (let i = 0; i < arms.length; i++) {
+    const prevNotch = notches[(i - 1 + arms.length) % arms.length];
+    const nextNotch = notches[i];
+    const [ox, oy] = arms[i].outward;
+    points.push({
+      x: prevNotch[0] + ox * armReach,
+      y: prevNotch[1] + oy * armReach,
+      radius: 0,
+    });
+    points.push({
+      x: nextNotch[0] + ox * armReach,
+      y: nextNotch[1] + oy * armReach,
+      radius: 0,
+    });
+    points.push({ x: nextNotch[0], y: nextNotch[1], radius: cornerRadius });
+  }
+  return points;
+}
+
 export function signalStateFor(
   direction: ApproachDirection,
   activePhase: Phase | undefined,

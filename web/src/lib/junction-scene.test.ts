@@ -4,6 +4,7 @@ import {
   carShape,
   crosswalkAnchors,
   junctionCenter,
+  junctionPavementOutline,
   motorcycleShape,
   offsetRibbon,
   signalPositions,
@@ -109,6 +110,46 @@ describe("crosswalkAnchors", () => {
         anchor.direction[1] * anchor.perpendicular[1];
       expect(dot).toBeCloseTo(0, 5);
     }
+  });
+});
+
+describe("junctionPavementOutline", () => {
+  it("returns 3 points per approach direction, with the concave notch carrying the corner radius", () => {
+    const geometry = makeNetworkGeometry();
+    const outline = junctionPavementOutline(geometry, 10, 15, 4);
+    expect(outline).toHaveLength(12); // 4 directions x 3 points
+    const notches = outline.filter((p) => p.radius > 0);
+    const outerTips = outline.filter((p) => p.radius === 0);
+    expect(notches).toHaveLength(4);
+    expect(outerTips).toHaveLength(8);
+    for (const notch of notches) {
+      expect(notch.radius).toBe(4);
+    }
+  });
+
+  it("centers the notches near the junction center, closer than the outer tips", () => {
+    const geometry = makeNetworkGeometry();
+    const center = junctionCenter(geometry);
+    const roadWidth = 10;
+    const armReach = 30;
+    const outline = junctionPavementOutline(geometry, roadWidth, armReach, 4);
+    for (const point of outline) {
+      const dist = Math.hypot(point.x - center.x, point.y - center.y);
+      if (point.radius > 0) {
+        // Notches sit roughly one road-width off center (diagonal of the
+        // half-width square), well short of a full arm reach.
+        expect(dist).toBeLessThan(armReach);
+      } else {
+        expect(dist).toBeGreaterThan(roadWidth / 2);
+      }
+    }
+  });
+
+  it("returns nothing for fewer than two approach directions", () => {
+    const geometry = makeNetworkGeometry({
+      lanes: makeNetworkGeometry().lanes.filter((l) => l.direction === "north"),
+    });
+    expect(junctionPavementOutline(geometry, 10, 15, 4)).toEqual([]);
   });
 });
 

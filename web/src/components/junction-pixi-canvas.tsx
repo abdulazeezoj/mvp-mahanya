@@ -6,7 +6,7 @@ import * as React from "react";
 import {
   crosswalkAnchors,
   DIRECTIONS,
-  junctionCenter,
+  junctionPavementOutline,
   offsetRibbon,
   signalPositions,
   signalStateFor,
@@ -94,6 +94,14 @@ function roadWidthFor(bounds: NetworkGeometry["bounds"]): number {
   );
 }
 
+function toSceneSpaceRounded(
+  bounds: NetworkGeometry["bounds"],
+  point: { x: number; y: number; radius: number },
+): { x: number; y: number; radius: number } {
+  const [x, y] = toSceneSpace(bounds, [point.x, point.y]);
+  return { x, y, radius: point.radius };
+}
+
 function fitTransform(
   canvasW: number,
   canvasH: number,
@@ -162,21 +170,38 @@ export function JunctionPixiCanvas({
 
     scene.clear();
 
-    // A solid paved plaza under the crossing point, drawn first so the
-    // road ribbons and crosswalks lay cleanly on top of one continuous
-    // asphalt surface instead of leaving visible seams at the mouth.
-    const junctionMid = junctionCenter(geo);
-    const center = toSceneSpace(bounds, [junctionMid.x, junctionMid.y]);
-    const plazaRadius = roadWidth * 1.05;
-    scene.circle(center[0], center[1], plazaRadius).fill(ASPHALT);
-    scene
-      .circle(center[0], center[1], plazaRadius)
-      .stroke({ width: roadWidth * 0.02, color: ASPHALT_SHOULDER, alpha: 0.6 });
-    // Soft theme-tinted glow behind the plaza for depth, subtle enough not
-    // to read as its own shape.
-    scene
-      .circle(center[0], center[1], plazaRadius * 1.6)
-      .fill({ color: colors.plaza, alpha: 0.08 });
+    // A solid paved area under the crossing point, shaped like the real
+    // road corners (rounded concave notches between arms) rather than a
+    // plain circle, drawn first so the road ribbons and crosswalks lay
+    // cleanly on top of one continuous asphalt surface with no seams.
+    const armReach = roadWidth * 1.5;
+    const cornerRadius = roadWidth * 0.4;
+    const pavement = junctionPavementOutline(
+      geo,
+      roadWidth,
+      armReach,
+      cornerRadius,
+    );
+    if (pavement.length > 0) {
+      const scenePavement = pavement.map((p) => ({
+        ...toSceneSpaceRounded(bounds, p),
+      }));
+      scene.roundShape(scenePavement, 0).fill(ASPHALT);
+      scene.roundShape(scenePavement, 0).stroke({
+        width: roadWidth * 0.02,
+        color: ASPHALT_SHOULDER,
+        alpha: 0.6,
+      });
+      const cx =
+        scenePavement.reduce((sum, p) => sum + p.x, 0) / scenePavement.length;
+      const cy =
+        scenePavement.reduce((sum, p) => sum + p.y, 0) / scenePavement.length;
+      // Soft theme-tinted glow behind the plaza for depth, subtle enough
+      // not to read as its own shape.
+      scene
+        .circle(cx, cy, armReach * 1.4)
+        .fill({ color: colors.plaza, alpha: 0.08 });
+    }
 
     for (const lane of geo.lanes) {
       const scenePoints = lane.shape.map((pt) => toSceneSpace(bounds, pt));
@@ -303,17 +328,14 @@ export function JunctionPixiCanvas({
           signalGraphicsRef.current[direction] = head;
         }
         const light = toSceneSpace(bounds, pos.light);
-        // The housing's long side (its lamp stack) is rotated to run
-        // parallel to the road it stands beside, not just drawn upright —
-        // see signalPositions' `direction` field. Rotation is derived from
-        // mapping local +Y (the unrotated housing's long axis) onto the
-        // scene-space road direction (SUMO map space is Y-up; scene space
-        // is Y-down, so the Y component flips).
-        const sceneDirX = pos.direction[0];
-        const sceneDirY = -pos.direction[1];
-        const rotation = Math.atan2(-sceneDirX, sceneDirY);
+        // Real signal heads always hang with a vertical lamp stack
+        // (red/yellow/green top to bottom) regardless of which way the
+        // road they control runs — rotating the housing to match the
+        // road's own orientation looked plausible on paper but reads as
+        // wrong for anyone who's seen a real traffic light. Always
+        // upright.
         head.position.set(light[0], light[1]);
-        head.rotation = rotation;
+        head.rotation = 0;
 
         const state = signalStateFor(direction, trafficState?.activePhase);
 
