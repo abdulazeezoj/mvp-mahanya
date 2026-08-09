@@ -15,7 +15,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { mockLatestDecision, mockTrafficState } from "@/lib/mock-data";
+import type { SchedulerDecision, TrafficState } from "@/lib/types";
 
 const REASON_LABELS: Record<string, string> = {
   model_accepted: "Model accepted",
@@ -25,12 +25,19 @@ const REASON_LABELS: Record<string, string> = {
   emergency_preempt: "Emergency pre-empt",
 };
 
-export function JunctionSummaryCards() {
-  const totalQueued = Object.values(mockTrafficState.approaches).reduce(
+export function JunctionSummaryCards({
+  trafficState,
+  decision,
+}: {
+  trafficState: TrafficState | null;
+  decision: SchedulerDecision | null;
+}) {
+  const approaches = trafficState ? Object.values(trafficState.approaches) : [];
+  const totalQueued = approaches.reduce(
     (sum, approach) => sum + approach.queueLength,
     0,
   );
-  const emergencyPresent = Object.values(mockTrafficState.approaches).some(
+  const emergencyPresent = approaches.some(
     (approach) => approach.hasEmergencyVehicle,
   );
 
@@ -39,8 +46,8 @@ export function JunctionSummaryCards() {
       <Card>
         <CardHeader>
           <CardDescription>Total Queued</CardDescription>
-          <CardTitle className="text-2xl font-semibold tabular-nums">
-            {totalQueued}
+          <CardTitle className="text-xl font-semibold tabular-nums">
+            {trafficState ? totalQueued : "—"}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
@@ -49,15 +56,17 @@ export function JunctionSummaryCards() {
             </Badge>
           </CardAction>
         </CardHeader>
-        <CardFooter className="text-sm text-muted-foreground">
-          Across all approaches, tick {mockTrafficState.tick}
+        <CardFooter className="text-xs text-muted-foreground">
+          {trafficState
+            ? `Across all approaches, tick ${trafficState.tick}`
+            : "No live state yet"}
         </CardFooter>
       </Card>
       <Card>
         <CardHeader>
           <CardDescription>Active Phase</CardDescription>
-          <CardTitle className="text-2xl font-semibold">
-            {mockTrafficState.activePhase}
+          <CardTitle className="text-xl font-semibold">
+            {trafficState?.activePhase ?? "—"}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
@@ -66,14 +75,14 @@ export function JunctionSummaryCards() {
             </Badge>
           </CardAction>
         </CardHeader>
-        <CardFooter className="text-sm text-muted-foreground">
-          Scenario {mockTrafficState.scenarioId}
+        <CardFooter className="text-xs text-muted-foreground">
+          {trafficState ? `Scenario ${trafficState.scenarioId}` : "Not running"}
         </CardFooter>
       </Card>
       <Card>
         <CardHeader>
           <CardDescription>Emergency Presence</CardDescription>
-          <CardTitle className="text-2xl font-semibold">
+          <CardTitle className="text-xl font-semibold">
             {emergencyPresent ? "Detected" : "None"}
           </CardTitle>
           <CardAction>
@@ -83,15 +92,15 @@ export function JunctionSummaryCards() {
             </Badge>
           </CardAction>
         </CardHeader>
-        <CardFooter className="text-sm text-muted-foreground">
+        <CardFooter className="text-xs text-muted-foreground">
           Pre-emption overrides normal control when detected
         </CardFooter>
       </Card>
       <Card>
         <CardHeader>
           <CardDescription>Last Reason Code</CardDescription>
-          <CardTitle className="text-2xl font-semibold">
-            {REASON_LABELS[mockLatestDecision.reasonCode]}
+          <CardTitle className="text-xl font-semibold">
+            {decision ? REASON_LABELS[decision.reasonCode] : "—"}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
@@ -100,8 +109,8 @@ export function JunctionSummaryCards() {
             </Badge>
           </CardAction>
         </CardHeader>
-        <CardFooter className="text-sm text-muted-foreground">
-          {mockLatestDecision.reasonDetail ?? "No override detail"}
+        <CardFooter className="text-xs text-muted-foreground">
+          {decision?.reasonDetail ?? "No override detail"}
         </CardFooter>
       </Card>
     </div>

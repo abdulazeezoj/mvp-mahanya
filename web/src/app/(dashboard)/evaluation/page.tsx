@@ -1,17 +1,27 @@
-import { EvaluationTrendChart } from "@/components/evaluation-trend-chart";
+"use client";
+
+import { ArrowClockwiseIcon, PlayIcon } from "@phosphor-icons/react";
+import Link from "next/link";
+import * as React from "react";
+import { toast } from "sonner";
+import { EvaluationComparisonChart } from "@/components/evaluation-comparison-chart";
+import { PageHeader } from "@/components/page-header";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { mockEvaluationMetrics } from "@/lib/mock-data";
+import { api } from "@/lib/api-client";
+import { useSelectedScenario } from "@/lib/scenario-context";
+import type { EvaluationMetrics } from "@/lib/types";
 
 const METRICS: {
-  key: keyof (typeof mockEvaluationMetrics)[number];
+  key: keyof EvaluationMetrics;
   label: string;
   unit: string;
-  format?: (value: number) => string;
 }[] = [
   { key: "avgWaitingTimeSec", label: "Avg. Waiting Time", unit: "s" },
   { key: "avgQueueLength", label: "Avg. Queue Length", unit: "veh" },
@@ -24,36 +34,103 @@ const METRICS: {
 ];
 
 export default function EvaluationPage() {
-  const scenarioId = mockEvaluationMetrics[0]?.scenarioId;
-  const intelligent = mockEvaluationMetrics.find(
-    (m) => m.scenarioId === scenarioId && m.controller === "intelligent",
+  const { selectedId } = useSelectedScenario();
+  const [metrics, setMetrics] = React.useState<EvaluationMetrics[] | null>(
+    null,
   );
-  const fixedTime = mockEvaluationMetrics.find(
-    (m) => m.scenarioId === scenarioId && m.controller === "fixed-time",
-  );
+  const [loading, setLoading] = React.useState(false);
+
+  const runEvaluation = React.useCallback(async () => {
+    if (!selectedId) return;
+    setLoading(true);
+    try {
+      const result = await api.getEvaluation(selectedId);
+      setMetrics(result);
+    } catch (error) {
+      toast.error("Evaluation failed", {
+        description: error instanceof Error ? error.message : String(error),
+      });
+    } finally {
+      setLoading(false);
+    }
+  }, [selectedId]);
+
+  const intelligent = metrics?.find((m) => m.controller === "intelligent");
+  const fixedTime = metrics?.find((m) => m.controller === "fixed-time");
 
   return (
     <div className="flex flex-1 flex-col gap-4">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {METRICS.map(({ key, label, unit }) => {
-          const intelligentValue = intelligent?.[key] as number | undefined;
-          const fixedTimeValue = fixedTime?.[key] as number | undefined;
-          return (
-            <Card key={key}>
-              <CardHeader>
-                <CardDescription>{label}</CardDescription>
-                <CardTitle className="text-2xl font-semibold tabular-nums">
-                  {intelligentValue ?? "—"} {unit}
+      <PageHeader
+        title="Evaluation"
+        description="Compare the intelligent controller against the fixed-time baseline."
+      />
+      {!selectedId ? (
+        <Alert>
+          <AlertTitle>No scenario selected</AlertTitle>
+          <AlertDescription>
+            Choose a scenario from the{" "}
+            <Link href="/" className="underline">
+              Live State
+            </Link>{" "}
+            page, then run an evaluation here.
+          </AlertDescription>
+        </Alert>
+      ) : (
+        <>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-4">
+              <div>
+                <CardTitle className="font-heading text-base font-semibold">
+                  Evaluate {selectedId}
                 </CardTitle>
-                <span className="text-xs text-muted-foreground">
-                  Fixed-time baseline: {fixedTimeValue ?? "—"} {unit}
-                </span>
-              </CardHeader>
-            </Card>
-          );
-        })}
-      </div>
-      <EvaluationTrendChart />
+                <CardDescription>
+                  Runs the intelligent controller and the fixed-time baseline on
+                  identical conditions, head to head. Takes a few seconds.
+                </CardDescription>
+              </div>
+              <Button onClick={runEvaluation} disabled={loading}>
+                {loading ? (
+                  <ArrowClockwiseIcon className="animate-spin" />
+                ) : (
+                  <PlayIcon />
+                )}
+                {loading ? "Running…" : "Run evaluation"}
+              </Button>
+            </CardHeader>
+          </Card>
+
+          {metrics && (
+            <>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                {METRICS.map(({ key, label, unit }) => {
+                  const intelligentValue = intelligent?.[key] as
+                    | number
+                    | undefined;
+                  const fixedTimeValue = fixedTime?.[key] as number | undefined;
+                  return (
+                    <Card key={key}>
+                      <CardHeader>
+                        <CardDescription>{label}</CardDescription>
+                        <CardTitle className="text-xl font-semibold tabular-nums">
+                          {intelligentValue?.toFixed(1) ?? "—"} {unit}
+                        </CardTitle>
+                        <span className="text-xs text-muted-foreground">
+                          Fixed-time baseline:{" "}
+                          {fixedTimeValue?.toFixed(1) ?? "—"} {unit}
+                        </span>
+                      </CardHeader>
+                    </Card>
+                  );
+                })}
+              </div>
+              <EvaluationComparisonChart
+                intelligent={intelligent}
+                fixedTime={fixedTime}
+              />
+            </>
+          )}
+        </>
+      )}
     </div>
   );
 }

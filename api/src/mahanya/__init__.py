@@ -1,2 +1,1 @@
-def main() -> None:
-    print("Hello from api!")
+"""MaHanya: priority-aware intelligent traffic control domain library."""

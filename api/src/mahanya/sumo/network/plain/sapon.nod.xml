@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Sapon Under-bridge Junction, Abeokuta — simplified 4-leg node layout.
+
+  Authored as plain SUMO XML (nodes/edges/connections) rather than in
+  NetEdit's GUI, since NetEdit is unavailable headless in this environment;
+  netconvert (SUMO's own network compiler, the same one NetEdit calls
+  under the hood) turns this into net.xml reproducibly. See
+  ../../../../../scripts/build_network.py.
+-->
+<nodes>
+    <node id="J_sapon" x="0" y="0" type="traffic_light" tl="J_sapon"/>
+    <node id="N_end" x="0" y="150" type="dead_end"/>
+    <node id="S_end" x="0" y="-150" type="dead_end"/>
+    <node id="E_end" x="150" y="0" type="dead_end"/>
+    <node id="W_end" x="-150" y="0" type="dead_end"/>
+</nodes>

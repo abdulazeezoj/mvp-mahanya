@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<configuration>
+    <input>
+        <net-file value="sapon.net.xml" />
+        <route-files value="sapon_offpeak.rou.xml" />
+    </input>
+    <time>
+        <begin value="0" />
+        <end value="1800" />
+        <step-length value="1.0" />
+    </time>
+    <processing>
+        <time-to-teleport value="300" />
+        <collision.action value="warn" />
+    </processing>
+</configuration>

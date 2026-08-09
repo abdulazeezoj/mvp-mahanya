@@ -1,2 +1,1 @@
-def main() -> None:
-    print("Hello from api!")
+"""Typer CLI entrypoint package (see `cli.main`)."""

@@ -5,7 +5,6 @@ import {
   GaugeIcon,
   ListChecksIcon,
   MapPinIcon,
-  PlayCircleIcon,
   TrafficSignalIcon,
 } from "@phosphor-icons/react";
 import Link from "next/link";
@@ -34,7 +33,6 @@ const navMain = [
   { title: "Live State", url: "/", icon: <GaugeIcon /> },
   { title: "Decision Log", url: "/decisions", icon: <ListChecksIcon /> },
   { title: "Evaluation", url: "/evaluation", icon: <ChartBarIcon /> },
-  { title: "Scenarios", url: "/scenarios", icon: <PlayCircleIcon /> },
 ];
 
 export function SidebarMain({
@@ -75,7 +73,7 @@ export function SidebarFooter() {
     <SidebarFooterContainer>
       <Card className="gap-2 py-4 shadow-none">
         <CardHeader className="gap-1.5 px-4">
-          <CardTitle className="flex items-center gap-1.5 text-sm">
+          <CardTitle className="flex items-center gap-1.5 text-xs font-heading font-semibold">
             <MapPinIcon className="size-4 shrink-0" />
             Sapon Under-bridge Junction
           </CardTitle>
@@ -105,7 +103,9 @@ export function DashboardSidebar({
               render={<a href="/" />}
             >
               <TrafficSignalIcon className="size-5!" />
-              <span className="text-base font-semibold">MaHanya</span>
+              <span className="font-heading text-sm font-semibold tracking-tight">
+                MaHanya
+              </span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

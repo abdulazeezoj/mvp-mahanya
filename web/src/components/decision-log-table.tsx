@@ -60,7 +60,7 @@ const columns: ColumnDef<SchedulerDecision>[] = [
   },
   {
     id: "recommendedPhase",
-    accessorFn: (row) => row.recommendation.recommendedPhase,
+    accessorFn: (row) => row.recommendation?.recommendedPhase ?? "—",
     header: "Model Recommendation",
   },
   {

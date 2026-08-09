@@ -46,7 +46,7 @@ export function ScenarioList({
             )}
           >
             <CardHeader>
-              <CardTitle className="flex items-center justify-between gap-2">
+              <CardTitle className="flex items-center justify-between gap-2 font-heading text-base font-semibold">
                 {scenario.name}
                 <Badge variant={STATUS_VARIANT[scenario.status]}>
                   {scenario.status}

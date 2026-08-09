@@ -15,7 +15,6 @@ const ROUTE_TITLES: Record<string, string> = {
   "/": "Live State",
   "/decisions": "Decision Log",
   "/evaluation": "Evaluation",
-  "/scenarios": "Scenarios",
 };
 
 export function DashboardHeader() {
@@ -35,7 +34,10 @@ export function DashboardHeader() {
         <Breadcrumb>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbPage className="text-base font-medium text-foreground">
+              <BreadcrumbPage
+                className="font-heading text-sm font-medium text-foreground"
+                suppressHydrationWarning
+              >
                 {title}
               </BreadcrumbPage>
             </BreadcrumbItem>
