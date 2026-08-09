@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   busShape,
   carShape,
+  crosswalkAnchors,
   junctionCenter,
   motorcycleShape,
   offsetRibbon,
@@ -55,6 +56,43 @@ describe("signalPositions", () => {
         pos.light[1] - pos.stop[1],
       );
       expect(dist).toBeGreaterThan(0);
+    }
+  });
+});
+
+describe("crosswalkAnchors", () => {
+  it("places one crosswalk band per direction, further from the stop line than the signal", () => {
+    const geometry = makeNetworkGeometry();
+    const roadWidth = 10;
+    const anchors = crosswalkAnchors(geometry, roadWidth);
+    const signals = signalPositions(geometry, roadWidth);
+    expect(Object.keys(anchors).sort()).toEqual([
+      "east",
+      "north",
+      "south",
+      "west",
+    ]);
+    for (const direction of Object.keys(anchors) as (keyof typeof anchors)[]) {
+      const anchor = anchors[direction];
+      const stop = signals[direction]?.stop;
+      if (!anchor || !stop) continue;
+      const distFromStop = Math.hypot(
+        anchor.center[0] - stop[0],
+        anchor.center[1] - stop[1],
+      );
+      expect(distFromStop).toBeGreaterThan(0);
+      // direction and perpendicular should be unit vectors, at right angles.
+      const dirLen = Math.hypot(anchor.direction[0], anchor.direction[1]);
+      const perpLen = Math.hypot(
+        anchor.perpendicular[0],
+        anchor.perpendicular[1],
+      );
+      expect(dirLen).toBeCloseTo(1, 5);
+      expect(perpLen).toBeCloseTo(1, 5);
+      const dot =
+        anchor.direction[0] * anchor.perpendicular[0] +
+        anchor.direction[1] * anchor.perpendicular[1];
+      expect(dot).toBeCloseTo(0, 5);
     }
   });
 });

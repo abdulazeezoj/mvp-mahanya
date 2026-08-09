@@ -122,6 +122,52 @@ export function signalPositions(
   return positions;
 }
 
+export interface CrosswalkAnchor {
+  /** Stripe-band center point, in SUMO map space. */
+  center: [number, number];
+  /** Unit vector along the lane's travel direction (into the junction), SUMO map space. */
+  direction: [number, number];
+  /** Unit vector across the lane, SUMO map space. */
+  perpendicular: [number, number];
+}
+
+/** A zebra-crossing anchor just outside the junction mouth, one per approach with an inbound lane. */
+export function crosswalkAnchors(
+  geometry: NetworkGeometry,
+  roadWidth: number,
+): Partial<Record<ApproachDirection, CrosswalkAnchor>> {
+  const anchors: Partial<Record<ApproachDirection, CrosswalkAnchor>> = {};
+  for (const direction of DIRECTIONS) {
+    const inLane = geometry.lanes.find(
+      (lane) => lane.direction === direction && lane.kind === "in",
+    );
+    if (!inLane) continue;
+    const outer = outerEndpoint(inLane);
+    const inner = innerEndpoint(inLane);
+    if (!outer || !inner) continue;
+
+    const tx = inner[0] - outer[0];
+    const ty = inner[1] - outer[1];
+    const length = Math.hypot(tx, ty) || 1;
+    const dx = tx / length;
+    const dy = ty / length;
+    const px = -dy;
+    const py = dx;
+
+    const setback = roadWidth * 1.3;
+    const center: [number, number] = [
+      inner[0] - dx * setback,
+      inner[1] - dy * setback,
+    ];
+    anchors[direction] = {
+      center,
+      direction: [dx, dy],
+      perpendicular: [px, py],
+    };
+  }
+  return anchors;
+}
+
 export function signalStateFor(
   direction: ApproachDirection,
   activePhase: Phase | undefined,

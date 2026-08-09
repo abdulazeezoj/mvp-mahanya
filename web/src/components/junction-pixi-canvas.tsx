@@ -4,6 +4,7 @@ import { useTheme } from "next-themes";
 import { Application, BlurFilter, Graphics } from "pixi.js";
 import * as React from "react";
 import {
+  crosswalkAnchors,
   DIRECTIONS,
   junctionCenter,
   offsetRibbon,
@@ -20,6 +21,11 @@ const SIGNAL_COLOR: Record<"red" | "yellow" | "green", number> = {
   yellow: 0xeab308,
   green: 0x22c55e,
 };
+const SIGNAL_LAMP_ORDER: ("red" | "yellow" | "green")[] = [
+  "red",
+  "yellow",
+  "green",
+];
 
 const EMERGENCY_FILL = 0xef4444;
 const EMERGENCY_BEACON = [0xef4444, 0x3b82f6];
@@ -27,16 +33,22 @@ const EMERGENCY_BEACON = [0xef4444, 0x3b82f6];
 const TWEEN_MS = 900;
 const EMERGENCY_BEACON_PERIOD_MS = 600;
 
+// Real-world material colors (asphalt, road paint, signal housing) read
+// consistently regardless of the app's light/dark theme — unlike UI
+// surface colors, these don't need to invert, only the canvas background
+// and vehicle/plaza tinting adapt to theme.
+const ASPHALT = 0x48494b;
+const ASPHALT_SHOULDER = 0x3a3b3d;
+const ROAD_PAINT = 0xf4f4f2;
+const SIGNAL_HOUSING = 0x232326;
+
 interface ThemeColors {
   background: number;
-  road: number;
-  roadAlpha: number;
-  laneMarking: number;
   plaza: number;
   vehicle: number;
   vehicleAlpha: number;
   vehicleOutline: number;
-  signalStalk: number;
+  housingOutline: number;
 }
 
 // getComputedStyle resolves this app's oklch() theme tokens to whatever
@@ -65,14 +77,11 @@ function resolveCssColor(varName: string): number {
 function resolveThemeColors(): ThemeColors {
   return {
     background: resolveCssColor("--color-muted"),
-    road: resolveCssColor("--color-muted-foreground"),
-    roadAlpha: 0.55,
-    laneMarking: resolveCssColor("--color-background"),
     plaza: resolveCssColor("--color-muted-foreground"),
     vehicle: resolveCssColor("--color-foreground"),
     vehicleAlpha: 0.85,
     vehicleOutline: resolveCssColor("--color-border"),
-    signalStalk: resolveCssColor("--color-muted-foreground"),
+    housingOutline: resolveCssColor("--color-border"),
   };
 }
 
@@ -147,13 +156,32 @@ export function JunctionPixiCanvas({
 
     scene.clear();
 
+    // A solid paved plaza under the crossing point, drawn first so the
+    // road ribbons and crosswalks lay cleanly on top of one continuous
+    // asphalt surface instead of leaving visible seams at the mouth.
+    const junctionMid = junctionCenter(geo);
+    const center = toSceneSpace(bounds, [junctionMid.x, junctionMid.y]);
+    const plazaRadius = roadWidth * 1.05;
+    scene.circle(center[0], center[1], plazaRadius).fill(ASPHALT);
+    scene
+      .circle(center[0], center[1], plazaRadius)
+      .stroke({ width: roadWidth * 0.02, color: ASPHALT_SHOULDER, alpha: 0.6 });
+    // Soft theme-tinted glow behind the plaza for depth, subtle enough not
+    // to read as its own shape.
+    scene
+      .circle(center[0], center[1], plazaRadius * 1.6)
+      .fill({ color: colors.plaza, alpha: 0.08 });
+
     for (const lane of geo.lanes) {
       const scenePoints = lane.shape.map((pt) => toSceneSpace(bounds, pt));
       const ribbon = offsetRibbon(scenePoints, roadWidth);
       if (ribbon.length > 0) {
-        scene
-          .poly(ribbon.flat())
-          .fill({ color: colors.road, alpha: colors.roadAlpha });
+        scene.poly(ribbon.flat()).fill(ASPHALT);
+        scene.poly(ribbon.flat()).stroke({
+          width: roadWidth * 0.03,
+          color: ASPHALT_SHOULDER,
+          alpha: 0.7,
+        });
       }
       for (let i = 0; i < scenePoints.length - 1; i++) {
         const [x1, y1] = scenePoints[i];
@@ -172,30 +200,55 @@ export function JunctionPixiCanvas({
             .lineTo(x1 + dirX * end, y1 + dirY * end)
             .stroke({
               width: roadWidth * 0.06,
-              color: colors.laneMarking,
-              alpha: 0.8,
+              color: ROAD_PAINT,
+              alpha: 0.85,
             });
           travelled += dashLen + gapLen;
         }
       }
     }
 
-    const junctionMid = junctionCenter(geo);
-    const center = toSceneSpace(bounds, [junctionMid.x, junctionMid.y]);
-    const plazaRadius =
-      Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY) * 0.07;
-    // Layered flat-alpha circles approximate a soft radial falloff without
-    // the added complexity/risk of Pixi's gradient-fill API for a purely
-    // decorative accent.
-    scene
-      .circle(center[0], center[1], plazaRadius)
-      .fill({ color: colors.plaza, alpha: 0.12 });
-    scene
-      .circle(center[0], center[1], plazaRadius * 0.6)
-      .fill({ color: colors.plaza, alpha: 0.12 });
-    scene
-      .circle(center[0], center[1], plazaRadius * 0.25)
-      .fill({ color: colors.plaza, alpha: 0.12 });
+    const crosswalks = crosswalkAnchors(geo, roadWidth);
+    const stripeCount = 6;
+    const stripeLen = roadWidth * 0.22;
+    const stripeThickness = roadWidth * 0.11;
+    for (const direction of DIRECTIONS) {
+      const anchor = crosswalks[direction];
+      if (!anchor) continue;
+      const anchorCenter = toSceneSpace(bounds, anchor.center);
+      const dir: [number, number] = [anchor.direction[0], -anchor.direction[1]];
+      const perp: [number, number] = [
+        anchor.perpendicular[0],
+        -anchor.perpendicular[1],
+      ];
+      const spacing = roadWidth / stripeCount;
+      for (let i = 0; i < stripeCount; i++) {
+        const offset = (i - (stripeCount - 1) / 2) * spacing;
+        const cx = anchorCenter[0] + perp[0] * offset;
+        const cy = anchorCenter[1] + perp[1] * offset;
+        const halfLen = stripeLen / 2;
+        const halfThick = stripeThickness / 2;
+        const corners: [number, number][] = [
+          [
+            cx + dir[0] * halfLen + perp[0] * halfThick,
+            cy + dir[1] * halfLen + perp[1] * halfThick,
+          ],
+          [
+            cx + dir[0] * halfLen - perp[0] * halfThick,
+            cy + dir[1] * halfLen - perp[1] * halfThick,
+          ],
+          [
+            cx - dir[0] * halfLen - perp[0] * halfThick,
+            cy - dir[1] * halfLen - perp[1] * halfThick,
+          ],
+          [
+            cx - dir[0] * halfLen + perp[0] * halfThick,
+            cy - dir[1] * halfLen + perp[1] * halfThick,
+          ],
+        ];
+        scene.poly(corners.flat()).fill({ color: ROAD_PAINT, alpha: 0.8 });
+      }
+    }
 
     const positions = signalPositions(geo, roadWidth);
     const lightRadius =
@@ -210,8 +263,8 @@ export function JunctionPixiCanvas({
         .lineTo(light[0], light[1])
         .stroke({
           width: lightRadius * 0.15,
-          color: colors.signalStalk,
-          alpha: 0.5,
+          color: ASPHALT_SHOULDER,
+          alpha: 0.7,
         });
     }
   }, []);
@@ -230,6 +283,10 @@ export function JunctionPixiCanvas({
       const lightRadius = extent * 0.02;
       const positions = signalPositions(geo, roadWidth);
 
+      const housingW = lightRadius * 1.9;
+      const housingH = lightRadius * 5.6;
+      const lampGap = housingH / 3;
+
       for (const direction of DIRECTIONS) {
         const pos = positions[direction];
         if (!pos) continue;
@@ -244,22 +301,40 @@ export function JunctionPixiCanvas({
         }
         const light = toSceneSpace(bounds, pos.light);
         const state = signalStateFor(direction, trafficState?.activePhase);
-        const color = SIGNAL_COLOR[state];
         const isActive = state !== "red";
 
         entry.halo.clear();
         entry.halo.visible = isActive;
         if (isActive) {
           entry.halo
-            .circle(light[0], light[1], lightRadius * 2.2)
-            .fill({ color, alpha: 0.6 });
+            .circle(light[0], light[1], lightRadius * 2.4)
+            .fill({ color: SIGNAL_COLOR[state], alpha: 0.55 });
         }
 
         entry.head.clear();
         entry.head
-          .circle(light[0], light[1], lightRadius)
-          .fill(color)
-          .stroke({ width: lightRadius * 0.3, color: theme.background });
+          .roundRect(
+            light[0] - housingW / 2,
+            light[1] - housingH / 2,
+            housingW,
+            housingH,
+            lightRadius * 0.45,
+          )
+          .fill(SIGNAL_HOUSING)
+          .stroke({
+            width: lightRadius * 0.12,
+            color: theme.housingOutline,
+            alpha: 0.6,
+          });
+
+        SIGNAL_LAMP_ORDER.forEach((lampState, i) => {
+          const lampY = light[1] - housingH / 2 + lampGap * (i + 0.5);
+          const isOn = lampState === state;
+          entry.head.circle(light[0], lampY, lightRadius * 0.6).fill({
+            color: isOn ? SIGNAL_COLOR[lampState] : 0x000000,
+            alpha: isOn ? 1 : 0.4,
+          });
+        });
       }
     },
     [trafficState?.activePhase],
