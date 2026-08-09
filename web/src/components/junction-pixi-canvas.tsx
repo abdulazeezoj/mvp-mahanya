@@ -1,7 +1,7 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { Application, BlurFilter, Graphics } from "pixi.js";
+import { Application, Graphics } from "pixi.js";
 import * as React from "react";
 import {
   crosswalkAnchors,
@@ -85,6 +85,15 @@ function resolveThemeColors(): ThemeColors {
   };
 }
 
+const ROAD_WIDTH_RATIO = 0.12;
+
+function roadWidthFor(bounds: NetworkGeometry["bounds"]): number {
+  return (
+    Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY) *
+    ROAD_WIDTH_RATIO
+  );
+}
+
 function fitTransform(
   canvasW: number,
   canvasH: number,
@@ -135,9 +144,7 @@ export function JunctionPixiCanvas({
   const appRef = React.useRef<Application | null>(null);
   const sceneRef = React.useRef<Graphics | null>(null);
   const vehicleLayerRef = React.useRef<Graphics | null>(null);
-  const signalGraphicsRef = React.useRef<
-    Partial<Record<string, { head: Graphics; halo: Graphics }>>
-  >({});
+  const signalGraphicsRef = React.useRef<Partial<Record<string, Graphics>>>({});
   const vehiclesRef = React.useRef<Map<string, VehicleSprite>>(new Map());
   const geometryRef = React.useRef(geometry);
   const colorsRef = React.useRef<ThemeColors | null>(null);
@@ -151,8 +158,7 @@ export function JunctionPixiCanvas({
     if (!app || !scene) return;
     const geo = geometryRef.current;
     const { bounds } = geo;
-    const roadWidth =
-      Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY) * 0.08;
+    const roadWidth = roadWidthFor(bounds);
 
     scene.clear();
 
@@ -279,7 +285,7 @@ export function JunctionPixiCanvas({
         bounds.maxX - bounds.minX,
         bounds.maxY - bounds.minY,
       );
-      const roadWidth = extent * 0.08;
+      const roadWidth = roadWidthFor(bounds);
       const lightRadius = extent * 0.02;
       const positions = signalPositions(geo, roadWidth);
 
@@ -290,32 +296,32 @@ export function JunctionPixiCanvas({
       for (const direction of DIRECTIONS) {
         const pos = positions[direction];
         if (!pos) continue;
-        let entry = signalGraphicsRef.current[direction];
-        if (!entry) {
-          const halo = new Graphics();
-          halo.filters = [new BlurFilter({ strength: 6 })];
-          const head = new Graphics();
-          sceneRef.current?.addChild(halo, head);
-          entry = { halo, head };
-          signalGraphicsRef.current[direction] = entry;
+        let head = signalGraphicsRef.current[direction];
+        if (!head) {
+          head = new Graphics();
+          sceneRef.current?.addChild(head);
+          signalGraphicsRef.current[direction] = head;
         }
         const light = toSceneSpace(bounds, pos.light);
+        // The housing's long side (its lamp stack) is rotated to run
+        // parallel to the road it stands beside, not just drawn upright —
+        // see signalPositions' `direction` field. Rotation is derived from
+        // mapping local +Y (the unrotated housing's long axis) onto the
+        // scene-space road direction (SUMO map space is Y-up; scene space
+        // is Y-down, so the Y component flips).
+        const sceneDirX = pos.direction[0];
+        const sceneDirY = -pos.direction[1];
+        const rotation = Math.atan2(-sceneDirX, sceneDirY);
+        head.position.set(light[0], light[1]);
+        head.rotation = rotation;
+
         const state = signalStateFor(direction, trafficState?.activePhase);
-        const isActive = state !== "red";
 
-        entry.halo.clear();
-        entry.halo.visible = isActive;
-        if (isActive) {
-          entry.halo
-            .circle(light[0], light[1], lightRadius * 2.4)
-            .fill({ color: SIGNAL_COLOR[state], alpha: 0.55 });
-        }
-
-        entry.head.clear();
-        entry.head
+        head.clear();
+        head
           .roundRect(
-            light[0] - housingW / 2,
-            light[1] - housingH / 2,
+            -housingW / 2,
+            -housingH / 2,
             housingW,
             housingH,
             lightRadius * 0.45,
@@ -328,9 +334,9 @@ export function JunctionPixiCanvas({
           });
 
         SIGNAL_LAMP_ORDER.forEach((lampState, i) => {
-          const lampY = light[1] - housingH / 2 + lampGap * (i + 0.5);
+          const lampY = -housingH / 2 + lampGap * (i + 0.5);
           const isOn = lampState === state;
-          entry.head.circle(light[0], lampY, lightRadius * 0.6).fill({
+          head.circle(0, lampY, lightRadius * 0.6).fill({
             color: isOn ? SIGNAL_COLOR[lampState] : 0x000000,
             alpha: isOn ? 1 : 0.4,
           });

@@ -56,7 +56,22 @@ describe("signalPositions", () => {
         pos.light[1] - pos.stop[1],
       );
       expect(dist).toBeGreaterThan(0);
+      const dirLen = Math.hypot(pos.direction[0], pos.direction[1]);
+      expect(dirLen).toBeCloseTo(1, 5);
     }
+  });
+
+  it("clears the road's own half-width, not just the centerline", () => {
+    const geometry = makeNetworkGeometry();
+    const roadWidth = 10;
+    const positions = signalPositions(geometry, roadWidth);
+    const north = positions.north;
+    if (!north) throw new Error("expected a north signal position");
+    const lateralDist = Math.hypot(
+      north.light[0] - north.stop[0],
+      north.light[1] - north.stop[1],
+    );
+    expect(lateralDist).toBeGreaterThan(roadWidth / 2);
   });
 });
 

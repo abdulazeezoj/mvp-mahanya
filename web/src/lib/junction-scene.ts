@@ -85,9 +85,11 @@ export function toSceneSpace(
 export interface SignalPosition {
   light: [number, number];
   stop: [number, number];
+  /** Unit vector along the lane's travel direction (into the junction), SUMO map space — the housing's long side is rotated to run parallel to this. */
+  direction: [number, number];
 }
 
-/** Perpendicular-offset light placement beside the lane, near the stop line, in SUMO map space. */
+/** Perpendicular-offset light placement beside (clear of) the lane, near the stop line, in SUMO map space. */
 export function signalPositions(
   geometry: NetworkGeometry,
   roadWidth: number,
@@ -110,14 +112,17 @@ export function signalPositions(
 
     const px = -dy;
     const py = dx;
-    const lateralOffset = roadWidth * 1.1;
+    // Clears the road's own half-width plus the crossing road's ribbon
+    // near the junction mouth, so the housing stands fully off the
+    // pavement rather than overlapping its edge.
+    const lateralOffset = roadWidth * 1.7;
     const setback = roadWidth * 0.4;
 
     const light: [number, number] = [
       inner[0] + px * lateralOffset - dx * setback,
       inner[1] + py * lateralOffset - dy * setback,
     ];
-    positions[direction] = { light, stop: inner };
+    positions[direction] = { light, stop: inner, direction: [dx, dy] };
   }
   return positions;
 }
