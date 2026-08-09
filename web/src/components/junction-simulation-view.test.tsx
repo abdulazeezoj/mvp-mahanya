@@ -9,16 +9,18 @@ describe("JunctionSimulationView", () => {
     expect(screen.getByText(/loading junction geometry/i)).toBeInTheDocument();
   });
 
-  it("renders one road polyline per lane once geometry loads", () => {
+  it("renders an accessible junction image region once geometry loads", () => {
     const geometry = makeNetworkGeometry();
     render(<JunctionSimulationView geometry={geometry} trafficState={null} />);
-    const svg = screen.getByRole("img", { name: /live junction simulation/i });
-    expect(svg.querySelectorAll("polyline")).toHaveLength(
-      geometry.lanes.length,
-    );
+    expect(
+      screen.getByRole("img", { name: /live junction simulation/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/junction idle, no live traffic state/i),
+    ).toBeInTheDocument();
   });
 
-  it("renders one marker per live vehicle, regardless of vehicle type", () => {
+  it("exposes the live vehicle count and active phase to assistive tech, regardless of vehicle type mix", () => {
     const geometry = makeNetworkGeometry();
     const state = makeTrafficState({
       activePhase: "NORTH_GREEN",
@@ -43,7 +45,22 @@ describe("JunctionSimulationView", () => {
       ],
     });
     render(<JunctionSimulationView geometry={geometry} trafficState={state} />);
-    const svg = screen.getByRole("img", { name: /live junction simulation/i });
-    expect(svg.querySelectorAll("polygon")).toHaveLength(5);
+    expect(
+      screen.getByText(/5 vehicles on the junction, active phase NORTH_GREEN/i),
+    ).toBeInTheDocument();
+  });
+
+  it("renders a legend entry for every vehicle type", () => {
+    const geometry = makeNetworkGeometry();
+    render(<JunctionSimulationView geometry={geometry} trafficState={null} />);
+    for (const label of [
+      "Car",
+      "Motorcycle",
+      "Bus",
+      "Truck",
+      "Emergency vehicle",
+    ]) {
+      expect(screen.getByText(label)).toBeInTheDocument();
+    }
   });
 });

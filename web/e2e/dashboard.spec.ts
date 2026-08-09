@@ -55,7 +55,56 @@ const EVALUATION = [
   },
 ];
 
+const NETWORK_GEOMETRY = {
+  bounds: { minX: 0, minY: 0, maxX: 300, maxY: 300 },
+  lanes: [
+    {
+      id: "north_in_0",
+      edgeId: "north_in",
+      direction: "north",
+      kind: "in",
+      shape: [
+        [148.4, 300],
+        [148.4, 157.2],
+      ],
+    },
+    {
+      id: "south_in_0",
+      edgeId: "south_in",
+      direction: "south",
+      kind: "in",
+      shape: [
+        [151.6, 0],
+        [151.6, 142.8],
+      ],
+    },
+    {
+      id: "east_in_0",
+      edgeId: "east_in",
+      direction: "east",
+      kind: "in",
+      shape: [
+        [300, 151.6],
+        [157.2, 151.6],
+      ],
+    },
+    {
+      id: "west_in_0",
+      edgeId: "west_in",
+      direction: "west",
+      kind: "in",
+      shape: [
+        [0, 148.4],
+        [142.8, 148.4],
+      ],
+    },
+  ],
+};
+
 async function mockApi(page: Page) {
+  await page.route(`${API_ORIGIN}/api/scenarios/*/network`, (route) =>
+    route.fulfill({ json: NETWORK_GEOMETRY }),
+  );
   await page.route(`${API_ORIGIN}/api/scenarios`, (route) =>
     route.fulfill({ json: SCENARIOS }),
   );
@@ -89,6 +138,17 @@ test("live state page lists scenarios from the API and can run one", async ({
     page.getByRole("button", { name: "Run" }).click(),
   ]);
   expect(request.method()).toBe("POST");
+});
+
+test("live junction view renders a Pixi canvas once a scenario's geometry loads", async ({
+  page,
+}) => {
+  await page.goto("/");
+
+  await page.getByText("Sapon Under-bridge — Peak Hour").click();
+  const junction = page.getByRole("img", { name: /live junction simulation/i });
+  await expect(junction).toBeVisible();
+  await expect(junction.locator("canvas")).toBeVisible();
 });
 
 test("decision log page renders decisions with a dash for bypassed recommendations", async ({
