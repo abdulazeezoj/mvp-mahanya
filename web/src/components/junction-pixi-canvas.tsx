@@ -420,39 +420,41 @@ export function JunctionPixiCanvas({
       }
     }
 
-    // Zebra pedestrian crossings, one per approach — alternating white and
-    // asphalt-colored stripes spanning the full carriageway width,
-    // perpendicular to travel. Reading outward from the junction: the
-    // pavement plaza (out to `armReach` from center), then the per-lane
-    // signal ticks (drawn in `drawSignals`, using the same tick geometry),
-    // then this crossing, then the regular dashed lane markings and
-    // approaching traffic — the same ordering real SUMO-GUI renders.
-    // Anchored `armReach` + gaps out from the junction *center*, not the
-    // real (much closer-in) SUMO stop line — see `pavementGeometryFor`.
+    // Zebra pedestrian crossings, one per approach. A real crosswalk's
+    // stripes each run ALONG the direction of travel (the way pedestrians
+    // walking across the road cut perpendicular to them) and are repeated
+    // side by side ACROSS the road's width — not the other way around.
+    // Reading outward from the junction: the pavement plaza (out to
+    // `armReach` from center), then the per-lane signal ticks (drawn in
+    // `drawSignals`, using the same tick geometry), then this crossing,
+    // then the regular dashed lane markings and approaching traffic — the
+    // same ordering real SUMO-GUI renders. Anchored `armReach` + gaps out
+    // from the junction *center*, not the real (much closer-in) SUMO stop
+    // line — see `pavementGeometryFor`.
     const tick = signalTickGeometryFor(laneWidth);
     const crossGap = laneWidth * 0.4;
     const crosswalkDepth = laneWidth * 1.2;
     const crosswalkDistance =
       armReach + tick.gap + tick.length + crossGap + crosswalkDepth / 2;
     const crosswalks = crosswalkAnchors(geo, crosswalkDistance);
-    const stripeCount = 5;
-    const stripeDepth = crosswalkDepth / (2 * stripeCount - 1);
-    const stripeSpan = roadWidth * 2 * 0.94;
+    const crosswalkSpan = roadWidth * 2 * 0.94;
+    const stripeCount = 9;
+    const stripeWidth = crosswalkSpan / (2 * stripeCount - 1);
     for (const direction of DIRECTIONS) {
       const anchor = crosswalks[direction];
       if (!anchor) continue;
       for (let i = 0; i < stripeCount; i++) {
-        const delta = (i - (stripeCount - 1) / 2) * stripeDepth * 2;
+        const delta = (i - (stripeCount - 1) / 2) * stripeWidth * 2;
         const centerMap: [number, number] = [
-          anchor.center[0] - anchor.direction[0] * delta,
-          anchor.center[1] - anchor.direction[1] * delta,
+          anchor.center[0] + anchor.perpendicular[0] * delta,
+          anchor.center[1] + anchor.perpendicular[1] * delta,
         ];
         const corners = orientedRectCorners(
           centerMap,
           anchor.direction,
           anchor.perpendicular,
-          stripeDepth,
-          stripeSpan,
+          crosswalkDepth,
+          stripeWidth,
         ).map(([x, y]) => toSceneSpace(bounds, [x, y]));
         scene.poly(corners.flat()).fill({ color: ROAD_PAINT, alpha: 0.85 });
       }
