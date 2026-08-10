@@ -429,6 +429,15 @@ export function JunctionPixiCanvas({
   const signalGraphicsRef = React.useRef<Partial<Record<string, Graphics>>>({});
   const vehiclesRef = React.useRef<Map<string, VehicleSprite>>(new Map());
   const geometryRef = React.useRef(geometry);
+  // Mirrors `trafficState` the same way `geometryRef` mirrors `geometry`:
+  // the mount effect's app.init().then() continuation (below) is created
+  // once, at mount, so any value it reads by closing over a render's props
+  // directly is frozen to whatever that render saw — if the traffic-state
+  // WebSocket delivers its first message after mount but before Pixi
+  // finishes initializing, a closure-captured `trafficState` would still
+  // be null when that continuation runs. Reading through this ref instead
+  // always sees the latest value, regardless of when the promise resolves.
+  const trafficStateRef = React.useRef(trafficState);
   const zoomRef = React.useRef(MIN_ZOOM_LEVEL);
   const panRef = React.useRef({ x: 0, y: 0 });
   const viewControlsRef = React.useRef<{
@@ -440,6 +449,7 @@ export function JunctionPixiCanvas({
   const [zoomPct, setZoomPct] = React.useState(100);
 
   geometryRef.current = geometry;
+  trafficStateRef.current = trafficState;
 
   const drawStatic = React.useCallback(() => {
     const app = appRef.current;
@@ -709,6 +719,7 @@ export function JunctionPixiCanvas({
     }
   }, []);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: activePhase drives this callback's *identity* (so the reactive effect below re-fires on change), even though the body reads the current value through trafficStateRef rather than this closure — see trafficStateRef's own comment.
   const drawSignals = React.useCallback(() => {
     const app = appRef.current;
     if (!app) return;
@@ -748,7 +759,10 @@ export function JunctionPixiCanvas({
       // is only used for orientation via `pos.direction` here).
       const outward: [number, number] = [-pos.direction[0], -pos.direction[1]];
       const perp = mapPerp(pos.direction);
-      const state = signalStateFor(direction, trafficState?.activePhase);
+      const state = signalStateFor(
+        direction,
+        trafficStateRef.current?.activePhase,
+      );
       group.clear();
 
       for (let lane = 0; lane < LANES_PER_DIRECTION; lane++) {
@@ -772,6 +786,7 @@ export function JunctionPixiCanvas({
     }
   }, [trafficState?.activePhase]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: trafficState drives this callback's *identity* (so the reactive effect below re-fires on change), even though the body reads the current value through trafficStateRef rather than this closure — see trafficStateRef's own comment.
   const drawCongestion = React.useCallback(() => {
     const layer = congestionLayerRef.current;
     if (!layer) return;
@@ -796,10 +811,11 @@ export function JunctionPixiCanvas({
     const crosswalkFarDistance = arrowOuterEdge + crossGap + crosswalkDepth;
 
     layer.clear();
-    if (!trafficState) return;
+    const traffic = trafficStateRef.current;
+    if (!traffic) return;
 
     for (const direction of DIRECTIONS) {
-      const approach = trafficState.approaches[direction];
+      const approach = traffic.approaches[direction];
       if (!approach) continue;
       const level = congestionLevel(approach);
       if (level <= 0.02) continue;
@@ -855,6 +871,7 @@ export function JunctionPixiCanvas({
     }
   }, [trafficState]);
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: trafficState drives this callback's *identity* (so the reactive effect below re-fires on change), even though the body reads the current value through trafficStateRef rather than this closure — see trafficStateRef's own comment.
   const syncVehicles = React.useCallback(() => {
     const scene = sceneRef.current;
     const layer = vehicleLayerRef.current;
@@ -864,7 +881,7 @@ export function JunctionPixiCanvas({
       geo.bounds.maxX - geo.bounds.minX,
       geo.bounds.maxY - geo.bounds.minY,
     );
-    const vehicles = trafficState?.vehicles ?? [];
+    const vehicles = trafficStateRef.current?.vehicles ?? [];
     const seen = new Set<string>();
     const now = performance.now();
 
@@ -1161,7 +1178,15 @@ export function JunctionPixiCanvas({
           activePointers.delete(e.pointerId);
           pinchStartDist = activePointers.size === 2 ? pointerDist() : null;
         };
+        // Requires ctrl/cmd+wheel to zoom, the same convention Google Maps
+        // and Figma use — this canvas sits inside a normally-scrollable
+        // dashboard page, not a full-viewport map, so capturing every plain
+        // wheel tick would trap page scroll under the cursor. Plain wheel
+        // is intentionally left alone (no preventDefault) so it scrolls
+        // the page as usual; the on-canvas +/- buttons cover zoom without
+        // a modifier key for anyone who doesn't know the shortcut.
         const onWheel = (e: WheelEvent) => {
+          if (!e.ctrlKey && !e.metaKey) return;
           e.preventDefault();
           const rect = app.canvas.getBoundingClientRect();
           const factor = Math.exp(-e.deltaY * WHEEL_ZOOM_SENSITIVITY);
