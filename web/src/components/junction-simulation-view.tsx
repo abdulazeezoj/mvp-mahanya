@@ -10,12 +10,23 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  DIRECTION_LABEL,
+  DIRECTIONS,
   VEHICLE_LABEL,
   VEHICLE_SHAPE,
   VEHICLE_SIZE_SCALE,
   VEHICLE_TYPES,
 } from "@/lib/junction-scene";
 import type { NetworkGeometry, TrafficState, VehicleType } from "@/lib/types";
+
+function emergencySummary(trafficState: TrafficState): string {
+  const directions = DIRECTIONS.filter(
+    (direction) => trafficState.approaches[direction]?.hasEmergencyVehicle,
+  );
+  if (directions.length === 0) return "";
+  const labels = directions.map((direction) => DIRECTION_LABEL[direction]);
+  return `, emergency vehicle present on ${labels.join(", ")}`;
+}
 
 const VEHICLE_FILL: Partial<Record<VehicleType, string>> = {
   emergency: "#ef4444",
@@ -75,7 +86,7 @@ export function JunctionSimulationView({
               />
               <span className="sr-only">
                 {trafficState
-                  ? `${trafficState.vehicles.length} vehicles on the junction, active phase ${trafficState.activePhase}`
+                  ? `${trafficState.vehicles.length} vehicles on the junction, active phase ${trafficState.activePhase}${emergencySummary(trafficState)}`
                   : "Junction idle, no live traffic state"}
               </span>
             </div>
