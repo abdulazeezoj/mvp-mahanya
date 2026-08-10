@@ -62,12 +62,10 @@ export function DecisionComparisonCard({
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-col gap-1">
-            <span className="text-xs text-muted-foreground">
-              Model recommendation
-            </span>
-            <span className="text-base font-semibold">
+            <span className="text-xs text-muted-foreground">Model rec.</span>
+            <span className="text-sm font-semibold">
               {decision.recommendation
                 ? decision.recommendation.recommendedPhase
                 : "bypassed (emergency pre-emption)"}
@@ -78,12 +76,10 @@ export function DecisionComparisonCard({
                 : " "}
             </span>
           </div>
-          <ArrowRightIcon className="size-5 shrink-0 text-muted-foreground" />
+          <ArrowRightIcon className="size-4 shrink-0 text-muted-foreground" />
           <div className="flex flex-col gap-1 text-right">
-            <span className="text-xs text-muted-foreground">
-              Scheduler applied
-            </span>
-            <span className="text-base font-semibold">
+            <span className="text-xs text-muted-foreground">Applied</span>
+            <span className="text-sm font-semibold">
               {decision.appliedPhase}
             </span>
             <span className="text-xs text-muted-foreground">

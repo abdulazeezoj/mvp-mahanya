@@ -39,16 +39,16 @@ export function ApproachStateGrid({
             No live state yet — select and run a scenario above.
           </p>
         ) : (
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3">
             {(Object.keys(trafficState.approaches) as ApproachDirection[]).map(
               (direction) => {
                 const approach = trafficState.approaches[direction];
                 return (
                   <div
                     key={direction}
-                    className="flex flex-col gap-2 rounded-lg border border-border p-4"
+                    className="flex flex-col gap-1.5 rounded-lg border border-border p-3"
                   >
-                    <div className="flex items-center justify-between">
+                    <div className="flex items-center justify-between gap-1">
                       <span className="text-xs font-medium">
                         {DIRECTION_LABELS[direction]}
                       </span>
@@ -60,14 +60,14 @@ export function ApproachStateGrid({
                       )}
                     </div>
                     <div className="flex items-baseline gap-1">
-                      <span className="text-xl font-semibold tabular-nums">
+                      <span className="text-lg font-semibold tabular-nums">
                         {approach.vehicleCount}
                       </span>
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-[11px] text-muted-foreground">
                         vehicles
                       </span>
                     </div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className="text-[11px] text-muted-foreground">
                       Queue: {approach.queueLength} · Waiting:{" "}
                       {approach.waitingTimeSec.toFixed(0)}s
                     </div>

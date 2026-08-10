@@ -42,7 +42,7 @@ export default function DecisionsPage() {
           </AlertDescription>
         </Alert>
       ) : (
-        <Card>
+        <Card size="sm">
           <CardContent>
             <DecisionLogTable decisions={decisions ?? []} />
           </CardContent>

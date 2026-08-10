@@ -15,6 +15,7 @@ const ROUTE_TITLES: Record<string, string> = {
   "/": "Live State",
   "/decisions": "Decision Log",
   "/evaluation": "Evaluation",
+  "/about": "Methodology",
 };
 
 export function DashboardHeader() {

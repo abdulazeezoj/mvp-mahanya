@@ -1,9 +1,11 @@
 import type {
   ApproachDirection,
+  ApproachState,
   LaneGeometry,
   NetworkBounds,
   NetworkGeometry,
   Phase,
+  TrafficState,
   VehicleType,
 } from "@/lib/types";
 
@@ -83,16 +85,21 @@ export function toSceneSpace(
 }
 
 export interface SignalPosition {
-  light: [number, number];
+  /** The lane's stop line — where the inbound lane meets the junction. SUMO map space. */
   stop: [number, number];
-  /** Unit vector along the lane's travel direction (into the junction), SUMO map space — the housing's long side is rotated to run parallel to this. */
+  /** Unit vector along the lane's travel direction (into the junction), SUMO map space. */
   direction: [number, number];
 }
 
-/** Perpendicular-offset light placement beside (clear of) the lane, near the stop line, in SUMO map space. */
+/**
+ * Each approach's stop line and travel direction, in SUMO map space —
+ * everything needed to draw a signal indicator bar directly across the
+ * lane at the stop line, the way SUMO-GUI itself renders a traffic light
+ * state (a short colored bar at the connection, not a free-standing
+ * housing beside the road).
+ */
 export function signalPositions(
   geometry: NetworkGeometry,
-  roadWidth: number,
 ): Partial<Record<ApproachDirection, SignalPosition>> {
   const positions: Partial<Record<ApproachDirection, SignalPosition>> = {};
   for (const direction of DIRECTIONS) {
@@ -110,19 +117,7 @@ export function signalPositions(
     const dx = tx / length;
     const dy = ty / length;
 
-    const px = -dy;
-    const py = dx;
-    // Clears the road's own half-width plus the crossing road's ribbon
-    // near the junction mouth, so the housing stands fully off the
-    // pavement rather than overlapping its edge.
-    const lateralOffset = roadWidth * 1.7;
-    const setback = roadWidth * 0.4;
-
-    const light: [number, number] = [
-      inner[0] + px * lateralOffset - dx * setback,
-      inner[1] + py * lateralOffset - dy * setback,
-    ];
-    positions[direction] = { light, stop: inner, direction: [dx, dy] };
+    positions[direction] = { stop: inner, direction: [dx, dy] };
   }
   return positions;
 }
@@ -132,40 +127,40 @@ export interface CrosswalkAnchor {
   center: [number, number];
   /** Unit vector along the lane's travel direction (into the junction), SUMO map space. */
   direction: [number, number];
-  /** Unit vector across the lane, SUMO map space. */
+  /** Unit vector across the lane (perpendicular to travel), SUMO map space. */
   perpendicular: [number, number];
 }
 
-/** A zebra-crossing anchor just outside the junction mouth, one per approach with an inbound lane. */
+/**
+ * A zebra-crossing anchor per approach, `distance` map-space units out from
+ * the junction center along that arm — the same "distance from center"
+ * convention `directionLabelAnchors` already uses, deliberately *not*
+ * relative to the real inbound lane's own (tiny, close-to-center) stop
+ * line: the drawn carriageway and pavement plaza are a cosmetic widening
+ * anchored on the junction center (see `LANES_PER_DIRECTION` in the
+ * canvas), so a crossing positioned relative to the real stop line would
+ * land deep inside that cosmetic plaza instead of out on the open road
+ * past it. Direction/perpendicular still come from the real inbound
+ * lane's own centerline, for orientation only.
+ */
 export function crosswalkAnchors(
   geometry: NetworkGeometry,
-  roadWidth: number,
+  distance: number,
 ): Partial<Record<ApproachDirection, CrosswalkAnchor>> {
+  const center = junctionCenter(geometry);
   const anchors: Partial<Record<ApproachDirection, CrosswalkAnchor>> = {};
   for (const direction of DIRECTIONS) {
-    const inLane = geometry.lanes.find(
-      (lane) => lane.direction === direction && lane.kind === "in",
-    );
-    if (!inLane) continue;
-    const outer = outerEndpoint(inLane);
-    const inner = innerEndpoint(inLane);
-    if (!outer || !inner) continue;
-
-    const tx = inner[0] - outer[0];
-    const ty = inner[1] - outer[1];
-    const length = Math.hypot(tx, ty) || 1;
-    const dx = tx / length;
-    const dy = ty / length;
+    const outward = armOutward(geometry, direction);
+    if (!outward) continue;
+    const [ox, oy] = outward;
+    // Travel direction (into the junction) is the reverse of outward.
+    const dx = -ox;
+    const dy = -oy;
     const px = -dy;
     const py = dx;
 
-    const setback = roadWidth * 1.3;
-    const center: [number, number] = [
-      inner[0] - dx * setback,
-      inner[1] - dy * setback,
-    ];
     anchors[direction] = {
-      center,
+      center: [center.x + ox * distance, center.y + oy * distance],
       direction: [dx, dy],
       perpendicular: [px, py],
     };
@@ -334,65 +329,36 @@ function polygon(points: [number, number][]): [number, number][] {
   return points;
 }
 
-export function carShape(size: number): [number, number][] {
-  const halfWidth = size * 0.62;
-  const nose = -size;
-  const shoulder = -size * 0.5;
-  const tail = size * 0.75;
+/**
+ * All vehicle shapes are plain axis-aligned rectangles — matching how SUMO
+ * itself renders vehicles from directly overhead — sized differently per
+ * type so they stay visually distinguishable without needing an outline
+ * silhouette (a rounded "nose" reads as a video-game car, not a simulator
+ * replay).
+ */
+function rectangleShape(halfWidth: number, half: number): [number, number][] {
   return polygon([
-    [0, nose],
-    [halfWidth, shoulder],
-    [halfWidth, tail],
-    [-halfWidth, tail],
-    [-halfWidth, shoulder],
+    [-halfWidth, -half],
+    [halfWidth, -half],
+    [halfWidth, half],
+    [-halfWidth, half],
   ]);
+}
+
+export function carShape(size: number): [number, number][] {
+  return rectangleShape(size * 0.5, size * 0.85);
 }
 
 export function motorcycleShape(size: number): [number, number][] {
-  const halfWidth = size * 0.3;
-  const nose = -size;
-  const shoulder = -size * 0.1;
-  const tail = size * 0.8;
-  return polygon([
-    [0, nose],
-    [halfWidth, shoulder],
-    [halfWidth * 0.7, tail],
-    [-halfWidth * 0.7, tail],
-    [-halfWidth, shoulder],
-  ]);
+  return rectangleShape(size * 0.26, size * 0.7);
 }
 
 export function busShape(size: number): [number, number][] {
-  const halfWidth = size * 0.55;
-  const nose = -size;
-  const shoulder = -size * 0.7;
-  const tail = size * 0.9;
-  return polygon([
-    [-halfWidth * 0.75, nose],
-    [halfWidth * 0.75, nose],
-    [halfWidth, shoulder],
-    [halfWidth, tail],
-    [-halfWidth, tail],
-    [-halfWidth, shoulder],
-  ]);
+  return rectangleShape(size * 0.56, size * 1.3);
 }
 
 export function truckShape(size: number): [number, number][] {
-  const cabHalf = size * 0.42;
-  const boxHalf = size * 0.52;
-  const nose = -size;
-  const cabEnd = -size * 0.45;
-  const tail = size * 0.95;
-  return polygon([
-    [-cabHalf, nose],
-    [cabHalf, nose],
-    [cabHalf, cabEnd],
-    [boxHalf, cabEnd],
-    [boxHalf, tail],
-    [-boxHalf, tail],
-    [-boxHalf, cabEnd],
-    [-cabHalf, cabEnd],
-  ]);
+  return rectangleShape(size * 0.5, size * 1.15);
 }
 
 export const VEHICLE_SHAPE: Record<
@@ -405,3 +371,122 @@ export const VEHICLE_SHAPE: Record<
   truck: truckShape,
   emergency: carShape,
 };
+
+export const DIRECTION_LABEL: Record<ApproachDirection, string> = {
+  north: "North",
+  south: "South",
+  east: "East",
+  west: "West",
+};
+
+export const DIRECTION_SHORT_LABEL: Record<ApproachDirection, string> = {
+  north: "N",
+  south: "S",
+  east: "E",
+  west: "W",
+};
+
+/** Outward (away-from-center) unit vector for the given direction's inbound lane, SUMO map space — undefined if that approach has no inbound lane. */
+function armOutward(
+  geometry: NetworkGeometry,
+  direction: ApproachDirection,
+): [number, number] | undefined {
+  const inLane = geometry.lanes.find(
+    (lane) => lane.direction === direction && lane.kind === "in",
+  );
+  if (!inLane) return undefined;
+  const outer = outerEndpoint(inLane);
+  const inner = innerEndpoint(inLane);
+  if (!outer || !inner) return undefined;
+  const tx = inner[0] - outer[0];
+  const ty = inner[1] - outer[1];
+  const length = Math.hypot(tx, ty) || 1;
+  return [-tx / length, -ty / length];
+}
+
+/**
+ * A label anchor per approach direction, set back from the junction center
+ * along that arm and offset sideways off the road into the grass — for
+ * "North"/"South"/... captions that sit beside the carriageway instead of
+ * printed on top of the lane markings. SUMO map space. `lateralOffset`
+ * defaults to 0 (directly on the centerline) for callers that don't need
+ * the sideways shift.
+ */
+export function directionLabelAnchors(
+  geometry: NetworkGeometry,
+  distance: number,
+  lateralOffset = 0,
+): Partial<Record<ApproachDirection, ScenePoint>> {
+  const center = junctionCenter(geometry);
+  const anchors: Partial<Record<ApproachDirection, ScenePoint>> = {};
+  for (const direction of DIRECTIONS) {
+    const outward = armOutward(geometry, direction);
+    if (!outward) continue;
+    const [ox, oy] = outward;
+    // Perpendicular to the arm, so the label sits beside the road rather
+    // than on its centerline.
+    const px = -oy;
+    const py = ox;
+    anchors[direction] = {
+      x: center.x + ox * distance + px * lateralOffset,
+      y: center.y + oy * distance + py * lateralOffset,
+    };
+  }
+  return anchors;
+}
+
+/**
+ * How congested a single approach reads, 0 (free-flowing) to 1 (saturated) —
+ * driven primarily by queue length, falling back to a damped vehicle count
+ * when nothing is formally queued yet. Purely a rendering heuristic (lane
+ * tint), not a scheduler input.
+ */
+const CONGESTION_QUEUE_SATURATION = 8;
+
+export function congestionLevel(
+  approach: Pick<ApproachState, "queueLength" | "vehicleCount">,
+): number {
+  const raw =
+    approach.queueLength > 0
+      ? approach.queueLength
+      : approach.vehicleCount * 0.5;
+  return Math.max(0, Math.min(1, raw / CONGESTION_QUEUE_SATURATION));
+}
+
+const CONGESTION_STOPS: [number, [number, number, number]][] = [
+  [0, [34, 197, 94]], // free-flowing — green-500
+  [0.5, [234, 179, 8]], // building — amber-500
+  [1, [239, 68, 68]], // saturated — red-500
+];
+
+/** Green -> amber -> red blend for a 0..1 congestion level, as 0xRRGGBB. */
+export function congestionColor(level: number): number {
+  const clamped = Math.max(0, Math.min(1, level));
+  let lo = CONGESTION_STOPS[0];
+  let hi = CONGESTION_STOPS[CONGESTION_STOPS.length - 1];
+  for (let i = 0; i < CONGESTION_STOPS.length - 1; i++) {
+    if (
+      clamped >= CONGESTION_STOPS[i][0] &&
+      clamped <= CONGESTION_STOPS[i + 1][0]
+    ) {
+      lo = CONGESTION_STOPS[i];
+      hi = CONGESTION_STOPS[i + 1];
+      break;
+    }
+  }
+  const span = hi[0] - lo[0] || 1;
+  const t = (clamped - lo[0]) / span;
+  const r = Math.round(lo[1][0] + (hi[1][0] - lo[1][0]) * t);
+  const g = Math.round(lo[1][1] + (hi[1][1] - lo[1][1]) * t);
+  const b = Math.round(lo[1][2] + (hi[1][2] - lo[1][2]) * t);
+  return ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
+}
+
+/** Every approach direction that currently has an emergency vehicle present. */
+export function emergencyDirections(
+  trafficState: TrafficState,
+): ApproachDirection[] {
+  return DIRECTIONS.filter(
+    (direction) => trafficState.approaches[direction]?.hasEmergencyVehicle,
+  );
+}

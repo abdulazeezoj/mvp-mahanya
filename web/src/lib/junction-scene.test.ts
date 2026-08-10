@@ -2,7 +2,11 @@ import { describe, expect, it } from "vitest";
 import {
   busShape,
   carShape,
+  congestionColor,
+  congestionLevel,
   crosswalkAnchors,
+  DIRECTIONS,
+  directionLabelAnchors,
   junctionCenter,
   junctionPavementOutline,
   motorcycleShape,
@@ -41,9 +45,9 @@ describe("junctionCenter", () => {
 });
 
 describe("signalPositions", () => {
-  it("places a light beside (not on) each direction's lane, offset from the stop line", () => {
+  it("places one stop-line position per direction, with a unit travel direction", () => {
     const geometry = makeNetworkGeometry();
-    const positions = signalPositions(geometry, 10);
+    const positions = signalPositions(geometry);
     expect(Object.keys(positions).sort()).toEqual([
       "east",
       "north",
@@ -52,63 +56,88 @@ describe("signalPositions", () => {
     ]);
     for (const pos of Object.values(positions)) {
       if (!pos) continue;
-      const dist = Math.hypot(
-        pos.light[0] - pos.stop[0],
-        pos.light[1] - pos.stop[1],
-      );
-      expect(dist).toBeGreaterThan(0);
       const dirLen = Math.hypot(pos.direction[0], pos.direction[1]);
       expect(dirLen).toBeCloseTo(1, 5);
     }
   });
 
-  it("clears the road's own half-width, not just the centerline", () => {
+  it("puts the stop position at the inbound lane's inner endpoint", () => {
     const geometry = makeNetworkGeometry();
-    const roadWidth = 10;
-    const positions = signalPositions(geometry, roadWidth);
+    const positions = signalPositions(geometry);
     const north = positions.north;
     if (!north) throw new Error("expected a north signal position");
-    const lateralDist = Math.hypot(
-      north.light[0] - north.stop[0],
-      north.light[1] - north.stop[1],
+    const inLane = geometry.lanes.find(
+      (lane) => lane.direction === "north" && lane.kind === "in",
     );
-    expect(lateralDist).toBeGreaterThan(roadWidth / 2);
+    if (!inLane) throw new Error("expected a north inbound lane");
+    expect(north.stop).toEqual(inLane.shape[inLane.shape.length - 1]);
   });
 });
 
 describe("crosswalkAnchors", () => {
-  it("places one crosswalk band per direction, further from the stop line than the signal", () => {
+  it("places one anchor per approach direction, with unit direction/perpendicular vectors", () => {
     const geometry = makeNetworkGeometry();
-    const roadWidth = 10;
-    const anchors = crosswalkAnchors(geometry, roadWidth);
-    const signals = signalPositions(geometry, roadWidth);
+    const anchors = crosswalkAnchors(geometry, 20);
     expect(Object.keys(anchors).sort()).toEqual([
       "east",
       "north",
       "south",
       "west",
     ]);
-    for (const direction of Object.keys(anchors) as (keyof typeof anchors)[]) {
-      const anchor = anchors[direction];
-      const stop = signals[direction]?.stop;
-      if (!anchor || !stop) continue;
-      const distFromStop = Math.hypot(
-        anchor.center[0] - stop[0],
-        anchor.center[1] - stop[1],
-      );
-      expect(distFromStop).toBeGreaterThan(0);
-      // direction and perpendicular should be unit vectors, at right angles.
-      const dirLen = Math.hypot(anchor.direction[0], anchor.direction[1]);
-      const perpLen = Math.hypot(
-        anchor.perpendicular[0],
-        anchor.perpendicular[1],
-      );
-      expect(dirLen).toBeCloseTo(1, 5);
-      expect(perpLen).toBeCloseTo(1, 5);
+    for (const anchor of Object.values(anchors)) {
+      if (!anchor) continue;
+      expect(Math.hypot(...anchor.direction)).toBeCloseTo(1, 5);
+      expect(Math.hypot(...anchor.perpendicular)).toBeCloseTo(1, 5);
+    }
+  });
+
+  it("keeps direction and perpendicular orthogonal", () => {
+    const geometry = makeNetworkGeometry();
+    const anchors = crosswalkAnchors(geometry, 20);
+    for (const anchor of Object.values(anchors)) {
+      if (!anchor) continue;
       const dot =
         anchor.direction[0] * anchor.perpendicular[0] +
         anchor.direction[1] * anchor.perpendicular[1];
       expect(dot).toBeCloseTo(0, 5);
+    }
+  });
+
+  it("sets the center exactly `distance` map-units out from the junction center, along -direction", () => {
+    const geometry = makeNetworkGeometry();
+    const distance = 60;
+    const center = junctionCenter(geometry);
+    const anchors = crosswalkAnchors(geometry, distance);
+    for (const anchor of Object.values(anchors)) {
+      if (!anchor) continue;
+      const dist = Math.hypot(
+        anchor.center[0] - center.x,
+        anchor.center[1] - center.y,
+      );
+      expect(dist).toBeCloseTo(distance, 5);
+      // Moving from the junction center toward the anchor should point the
+      // same way as -direction (the anchor sits out on the arm, not
+      // pointed further into the junction).
+      const outward = [
+        (anchor.center[0] - center.x) / dist,
+        (anchor.center[1] - center.y) / dist,
+      ];
+      expect(outward[0]).toBeCloseTo(-anchor.direction[0], 5);
+      expect(outward[1]).toBeCloseTo(-anchor.direction[1], 5);
+    }
+  });
+
+  it("matches directionLabelAnchors' own distance-from-center placement", () => {
+    const geometry = makeNetworkGeometry();
+    const distance = 45;
+    const crosswalks = crosswalkAnchors(geometry, distance);
+    const labels = directionLabelAnchors(geometry, distance);
+    for (const direction of DIRECTIONS) {
+      const crossing = crosswalks[direction];
+      const label = labels[direction];
+      if (!crossing || !label) continue;
+      expect(crossing.center[0]).toBeCloseTo(label.x, 5);
+      expect(crossing.center[1]).toBeCloseTo(label.y, 5);
     }
   });
 });
@@ -179,6 +208,69 @@ describe("offsetRibbon", () => {
 
   it("returns an empty polygon for a degenerate (single-point) shape", () => {
     expect(offsetRibbon([[0, 0]], 10)).toEqual([]);
+  });
+});
+
+describe("directionLabelAnchors", () => {
+  it("places one anchor per approach direction, set back from the junction center", () => {
+    const geometry = makeNetworkGeometry();
+    const center = junctionCenter(geometry);
+    const anchors = directionLabelAnchors(geometry, 40);
+    expect(Object.keys(anchors).sort()).toEqual([
+      "east",
+      "north",
+      "south",
+      "west",
+    ]);
+    for (const anchor of Object.values(anchors)) {
+      if (!anchor) continue;
+      const dist = Math.hypot(anchor.x - center.x, anchor.y - center.y);
+      expect(dist).toBeCloseTo(40, 0);
+    }
+  });
+});
+
+describe("congestionLevel", () => {
+  it("is 0 for an empty approach", () => {
+    expect(congestionLevel({ queueLength: 0, vehicleCount: 0 })).toBe(0);
+  });
+
+  it("saturates at 1 for a long queue", () => {
+    expect(congestionLevel({ queueLength: 100, vehicleCount: 100 })).toBe(1);
+  });
+
+  it("falls back to a damped vehicle count when nothing is formally queued", () => {
+    const level = congestionLevel({ queueLength: 0, vehicleCount: 4 });
+    expect(level).toBeGreaterThan(0);
+    expect(level).toBeLessThan(1);
+  });
+
+  it("increases monotonically with queue length", () => {
+    const low = congestionLevel({ queueLength: 1, vehicleCount: 1 });
+    const high = congestionLevel({ queueLength: 6, vehicleCount: 6 });
+    expect(high).toBeGreaterThan(low);
+  });
+});
+
+describe("congestionColor", () => {
+  it("is green at level 0 and red at level 1", () => {
+    expect(congestionColor(0)).toBe(0x22c55e);
+    expect(congestionColor(1)).toBe(0xef4444);
+  });
+
+  it("passes through amber around the midpoint", () => {
+    expect(congestionColor(0.5)).toBe(0xeab308);
+  });
+
+  it("clamps out-of-range levels", () => {
+    expect(congestionColor(-5)).toBe(congestionColor(0));
+    expect(congestionColor(5)).toBe(congestionColor(1));
+  });
+});
+
+describe("DIRECTIONS", () => {
+  it("still lists all four approach directions", () => {
+    expect(DIRECTIONS.sort()).toEqual(["east", "north", "south", "west"]);
   });
 });
 

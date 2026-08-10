@@ -50,6 +50,37 @@ describe("JunctionSimulationView", () => {
     ).toBeInTheDocument();
   });
 
+  it("announces which approach has an emergency vehicle to assistive tech", () => {
+    const geometry = makeNetworkGeometry();
+    const state = makeTrafficState({
+      activePhase: "NORTH_GREEN",
+      approaches: {
+        north: makeTrafficState().approaches.north,
+        south: {
+          vehicleCount: 1,
+          queueLength: 1,
+          waitingTimeSec: 4,
+          hasEmergencyVehicle: true,
+        },
+        east: makeTrafficState().approaches.east,
+        west: makeTrafficState().approaches.west,
+      },
+      vehicles: [
+        {
+          vehicleId: "v1",
+          x: 150,
+          y: 50,
+          angleDeg: 0,
+          vehicleType: "emergency",
+        },
+      ],
+    });
+    render(<JunctionSimulationView geometry={geometry} trafficState={state} />);
+    expect(
+      screen.getByText(/emergency vehicle present on South/i),
+    ).toBeInTheDocument();
+  });
+
   it("renders a legend entry for every vehicle type", () => {
     const geometry = makeNetworkGeometry();
     render(<JunctionSimulationView geometry={geometry} trafficState={null} />);

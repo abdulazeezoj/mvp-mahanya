@@ -1,6 +1,11 @@
 "use client";
 
-import { CaretDownIcon, CaretUpIcon } from "@phosphor-icons/react";
+import {
+  CaretDownIcon,
+  CaretUpIcon,
+  ClipboardTextIcon,
+  WarningOctagonIcon,
+} from "@phosphor-icons/react";
 import {
   type ColumnDef,
   flexRender,
@@ -28,6 +33,14 @@ import {
 } from "@/components/ui/table";
 import type { SchedulerDecision } from "@/lib/types";
 
+/**
+ * Severity hierarchy, calmest to loudest: `model_accepted` is the routine,
+ * expected case (outline). `min_green_hold`/`max_green_force` are routine
+ * mechanical holds enforcing timing constraints (secondary).
+ * `anti_starvation_force` is a notable override worth noticing (primary).
+ * `emergency_preempt` is the most safety-critical override in the system —
+ * it must be unmistakable in a scrolling log (destructive).
+ */
 const REASON_VARIANT: Record<
   SchedulerDecision["reasonCode"],
   "default" | "secondary" | "destructive" | "outline"
@@ -70,11 +83,17 @@ const columns: ColumnDef<SchedulerDecision>[] = [
   {
     accessorKey: "reasonCode",
     header: "Reason",
-    cell: ({ row }) => (
-      <Badge variant={REASON_VARIANT[row.original.reasonCode]}>
-        {row.original.reasonCode}
-      </Badge>
-    ),
+    cell: ({ row }) => {
+      const reasonCode = row.original.reasonCode;
+      return (
+        <Badge variant={REASON_VARIANT[reasonCode]}>
+          {reasonCode === "emergency_preempt" && (
+            <WarningOctagonIcon weight="fill" />
+          )}
+          {reasonCode}
+        </Badge>
+      );
+    },
   },
 ];
 
@@ -105,6 +124,20 @@ export function DecisionLogTable({
     getSortedRowModel: getSortedRowModel(),
   });
 
+  if (decisions.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-2 rounded-md border border-dashed py-16 text-center">
+        <ClipboardTextIcon className="size-8 text-muted-foreground" />
+        <p className="text-sm font-medium text-foreground">No decisions yet</p>
+        <p className="max-w-sm text-xs text-muted-foreground">
+          Scheduler decisions will appear here once the scenario is running.
+        </p>
+      </div>
+    );
+  }
+
+  const rows = table.getRowModel().rows;
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-end">
@@ -129,47 +162,63 @@ export function DecisionLogTable({
           </SelectContent>
         </Select>
       </div>
-      <Table>
-        <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
-                  {header.isPlaceholder ? null : (
-                    <button
-                      type="button"
-                      className="flex items-center gap-1"
-                      onClick={header.column.getToggleSortingHandler()}
-                    >
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                      {header.column.getIsSorted() === "asc" && (
-                        <CaretUpIcon className="size-3" />
-                      )}
-                      {header.column.getIsSorted() === "desc" && (
-                        <CaretDownIcon className="size-3" />
-                      )}
-                    </button>
-                  )}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
-        </TableHeader>
-        <TableBody>
-          {table.getRowModel().rows.map((row) => (
-            <TableRow key={row.id}>
-              {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id}>
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
+      <div className="max-h-[32rem] overflow-y-auto rounded-md border">
+        <Table>
+          <TableHeader className="sticky top-0 z-10 bg-card">
+            {table.getHeaderGroups().map((headerGroup) => (
+              <TableRow key={headerGroup.id} className="hover:bg-transparent">
+                {headerGroup.headers.map((header) => (
+                  <TableHead key={header.id}>
+                    {header.isPlaceholder ? null : (
+                      <button
+                        type="button"
+                        className="flex items-center gap-1"
+                        onClick={header.column.getToggleSortingHandler()}
+                      >
+                        {flexRender(
+                          header.column.columnDef.header,
+                          header.getContext(),
+                        )}
+                        {header.column.getIsSorted() === "asc" && (
+                          <CaretUpIcon className="size-3" />
+                        )}
+                        {header.column.getIsSorted() === "desc" && (
+                          <CaretDownIcon className="size-3" />
+                        )}
+                      </button>
+                    )}
+                  </TableHead>
+                ))}
+              </TableRow>
+            ))}
+          </TableHeader>
+          <TableBody className="[&>tr:nth-child(even)]:bg-muted/30">
+            {rows.length === 0 ? (
+              <TableRow className="hover:bg-transparent">
+                <TableCell
+                  colSpan={columns.length}
+                  className="h-24 text-center text-muted-foreground"
+                >
+                  No decisions match this filter.
                 </TableCell>
-              ))}
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+              </TableRow>
+            ) : (
+              rows.map((row) => (
+                <TableRow key={row.id}>
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id}>
+                      {flexRender(
+                        cell.column.columnDef.cell,
+                        cell.getContext(),
+                      )}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
     </div>
   );
 }

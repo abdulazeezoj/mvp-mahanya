@@ -2,14 +2,13 @@
 
 import { Badge } from "@/components/ui/badge";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import type { Scenario } from "@/lib/types";
-import { cn } from "@/lib/utils";
 
 const STATUS_VARIANT: Record<
   Scenario["status"],
@@ -21,7 +20,7 @@ const STATUS_VARIANT: Record<
   completed: "secondary",
 };
 
-export function ScenarioList({
+export function ScenarioPicker({
   scenarios,
   selectedId,
   onSelect,
@@ -30,36 +29,46 @@ export function ScenarioList({
   selectedId: string | null;
   onSelect: (id: string) => void;
 }) {
+  const selected = scenarios.find((s) => s.id === selectedId);
+
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {scenarios.map((scenario) => (
-        <button
-          type="button"
-          key={scenario.id}
-          onClick={() => onSelect(scenario.id)}
-          className="text-left"
-        >
-          <Card
-            className={cn(
-              "transition-colors hover:ring-2 hover:ring-ring/50",
-              selectedId === scenario.id && "ring-2 ring-ring",
-            )}
-          >
-            <CardHeader>
-              <CardTitle className="flex items-center justify-between gap-2 font-heading text-base font-semibold">
-                {scenario.name}
-                <Badge variant={STATUS_VARIANT[scenario.status]}>
-                  {scenario.status}
+    <Select
+      value={selectedId}
+      onValueChange={(value) => value && onSelect(value)}
+    >
+      <SelectTrigger className="w-56" aria-label="Select scenario">
+        <SelectValue placeholder="Select a scenario">
+          {() =>
+            selected ? (
+              <span className="flex flex-1 items-center justify-between gap-2 overflow-hidden">
+                <span className="truncate">{selected.name}</span>
+                <Badge variant={STATUS_VARIANT[selected.status]}>
+                  {selected.status}
                 </Badge>
-              </CardTitle>
-              <CardDescription>Seed {scenario.seed}</CardDescription>
-            </CardHeader>
-            <CardContent className="text-xs text-muted-foreground">
-              {scenario.id}
-            </CardContent>
-          </Card>
-        </button>
-      ))}
-    </div>
+              </span>
+            ) : (
+              "Select a scenario"
+            )
+          }
+        </SelectValue>
+      </SelectTrigger>
+      <SelectContent>
+        {scenarios.map((scenario) => (
+          <SelectItem key={scenario.id} value={scenario.id}>
+            <span className="flex flex-1 items-center justify-between gap-2">
+              <span className="flex flex-col">
+                <span>{scenario.name}</span>
+                <span className="text-[10px] text-muted-foreground">
+                  Seed {scenario.seed}
+                </span>
+              </span>
+              <Badge variant={STATUS_VARIANT[scenario.status]}>
+                {scenario.status}
+              </Badge>
+            </span>
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
   );
 }

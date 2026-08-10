@@ -129,10 +129,18 @@ test("live state page lists scenarios from the API and can run one", async ({
 }) => {
   await page.goto("/");
 
-  await expect(page.getByText("Sapon Under-bridge — Peak Hour")).toBeVisible();
-  await expect(page.getByText("Sapon Under-bridge — Off-Peak")).toBeVisible();
+  const picker = page.getByRole("combobox", { name: /select scenario/i });
+  await picker.click();
+  await expect(
+    page.getByRole("option", { name: /Sapon Under-bridge — Peak Hour/i }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("option", { name: /Sapon Under-bridge — Off-Peak/i }),
+  ).toBeVisible();
 
-  await page.getByText("Sapon Under-bridge — Peak Hour").click();
+  await page
+    .getByRole("option", { name: /Sapon Under-bridge — Peak Hour/i })
+    .click();
   const [request] = await Promise.all([
     page.waitForRequest(`${API_ORIGIN}/api/controls/sapon-peak/run`),
     page.getByRole("button", { name: "Run" }).click(),
@@ -145,7 +153,10 @@ test("live junction view renders a Pixi canvas once a scenario's geometry loads"
 }) => {
   await page.goto("/");
 
-  await page.getByText("Sapon Under-bridge — Peak Hour").click();
+  await page.getByRole("combobox", { name: /select scenario/i }).click();
+  await page
+    .getByRole("option", { name: /Sapon Under-bridge — Peak Hour/i })
+    .click();
   const junction = page.getByRole("img", { name: /live junction simulation/i });
   await expect(junction).toBeVisible();
   await expect(junction.locator("canvas")).toBeVisible();
@@ -183,7 +194,9 @@ test("live state page shows the scenario picker and an empty state when none is 
   page,
 }) => {
   await page.goto("/");
-  await expect(page.getByText("Sapon Under-bridge — Peak Hour")).toBeVisible();
+  await expect(
+    page.getByRole("combobox", { name: /select scenario/i }),
+  ).toBeVisible();
   await expect(
     page.getByText(/no live state yet — select and run/i),
   ).toBeVisible();

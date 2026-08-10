@@ -1,7 +1,9 @@
 "use client";
 
+import { SirenIcon } from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import dynamic from "next/dynamic";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Card,
   CardContent,
@@ -10,12 +12,21 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import {
+  DIRECTION_LABEL,
+  emergencyDirections,
   VEHICLE_LABEL,
   VEHICLE_SHAPE,
   VEHICLE_SIZE_SCALE,
   VEHICLE_TYPES,
 } from "@/lib/junction-scene";
 import type { NetworkGeometry, TrafficState, VehicleType } from "@/lib/types";
+
+function emergencySummary(trafficState: TrafficState): string {
+  const directions = emergencyDirections(trafficState);
+  if (directions.length === 0) return "";
+  const labels = directions.map((direction) => DIRECTION_LABEL[direction]);
+  return `, emergency vehicle present on ${labels.join(", ")}`;
+}
 
 const VEHICLE_FILL: Partial<Record<VehicleType, string>> = {
   emergency: "#ef4444",
@@ -68,6 +79,21 @@ export function JunctionSimulationView({
           </p>
         ) : (
           <>
+            {trafficState && emergencyDirections(trafficState).length > 0 && (
+              <Alert
+                variant="destructive"
+                className="animate-pulse border-destructive/60 bg-destructive/15"
+              >
+                <SirenIcon />
+                <AlertTitle>Emergency vehicle detected</AlertTitle>
+                <AlertDescription>
+                  Priority approach:{" "}
+                  {emergencyDirections(trafficState)
+                    .map((direction) => DIRECTION_LABEL[direction])
+                    .join(", ")}
+                </AlertDescription>
+              </Alert>
+            )}
             <div role="img" aria-label="Live junction simulation">
               <JunctionPixiCanvas
                 geometry={geometry}
@@ -75,7 +101,7 @@ export function JunctionSimulationView({
               />
               <span className="sr-only">
                 {trafficState
-                  ? `${trafficState.vehicles.length} vehicles on the junction, active phase ${trafficState.activePhase}`
+                  ? `${trafficState.vehicles.length} vehicles on the junction, active phase ${trafficState.activePhase}${emergencySummary(trafficState)}`
                   : "Junction idle, no live traffic state"}
               </span>
             </div>

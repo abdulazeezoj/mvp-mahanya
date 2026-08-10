@@ -5,6 +5,12 @@ import { DecisionLogTable } from "@/components/decision-log-table";
 import { makeDecision } from "@/lib/test-fixtures";
 
 describe("DecisionLogTable", () => {
+  it("renders a 'no decisions yet' empty state when given zero decisions", () => {
+    render(<DecisionLogTable decisions={[]} />);
+    expect(screen.getByText("No decisions yet")).toBeInTheDocument();
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+  });
+
   it("renders one row per decision", () => {
     const decisions = [makeDecision({ tick: 2 }), makeDecision({ tick: 1 })];
     render(<DecisionLogTable decisions={decisions} />);
@@ -43,5 +49,23 @@ describe("DecisionLogTable", () => {
 
     expect(within(table).queryByText("model_accepted")).not.toBeInTheDocument();
     expect(within(table).getByText("emergency_preempt")).toBeInTheDocument();
+  });
+
+  it("shows a filtered-empty message when no decision matches the selected reason", async () => {
+    const user = userEvent.setup({ pointerEventsCheck: 0 });
+    const decisions = [makeDecision({ tick: 1, reasonCode: "model_accepted" })];
+    render(<DecisionLogTable decisions={decisions} />);
+
+    await user.click(
+      screen.getByRole("combobox", { name: /filter by reason/i }),
+    );
+    const option = await screen.findByRole("option", {
+      name: "emergency_preempt",
+    });
+    await user.click(option);
+
+    expect(
+      screen.getByText("No decisions match this filter."),
+    ).toBeInTheDocument();
   });
 });
