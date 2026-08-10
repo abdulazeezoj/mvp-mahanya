@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  BookOpenIcon,
   ChartBarIcon,
   GaugeIcon,
   ListChecksIcon,
@@ -33,6 +34,7 @@ const navMain = [
   { title: "Live State", url: "/", icon: <GaugeIcon /> },
   { title: "Decision Log", url: "/decisions", icon: <ListChecksIcon /> },
   { title: "Evaluation", url: "/evaluation", icon: <ChartBarIcon /> },
+  { title: "Methodology", url: "/about", icon: <BookOpenIcon /> },
 ];
 
 export function SidebarMain({

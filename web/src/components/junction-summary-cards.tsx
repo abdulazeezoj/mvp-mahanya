@@ -42,11 +42,11 @@ export function JunctionSummaryCards({
   );
 
   return (
-    <div className="grid grid-cols-1 gap-4 *:data-[slot=card]:bg-linear-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs sm:grid-cols-2 lg:grid-cols-4 dark:*:data-[slot=card]:bg-card">
-      <Card>
-        <CardHeader>
+    <div className="grid grid-cols-2 gap-3 *:data-[slot=card]:bg-linear-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs dark:*:data-[slot=card]:bg-card">
+      <Card size="sm">
+        <CardHeader className="gap-1">
           <CardDescription>Total Queued</CardDescription>
-          <CardTitle className="text-xl font-semibold tabular-nums">
+          <CardTitle className="text-lg font-semibold tabular-nums">
             {trafficState ? totalQueued : "—"}
           </CardTitle>
           <CardAction>
@@ -56,16 +56,14 @@ export function JunctionSummaryCards({
             </Badge>
           </CardAction>
         </CardHeader>
-        <CardFooter className="text-xs text-muted-foreground">
-          {trafficState
-            ? `Across all approaches, tick ${trafficState.tick}`
-            : "No live state yet"}
+        <CardFooter className="text-[11px] text-muted-foreground">
+          {trafficState ? `Tick ${trafficState.tick}` : "No live state yet"}
         </CardFooter>
       </Card>
-      <Card>
-        <CardHeader>
+      <Card size="sm">
+        <CardHeader className="gap-1">
           <CardDescription>Active Phase</CardDescription>
-          <CardTitle className="text-xl font-semibold">
+          <CardTitle className="truncate text-lg font-semibold">
             {trafficState?.activePhase ?? "—"}
           </CardTitle>
           <CardAction>
@@ -75,14 +73,14 @@ export function JunctionSummaryCards({
             </Badge>
           </CardAction>
         </CardHeader>
-        <CardFooter className="text-xs text-muted-foreground">
-          {trafficState ? `Scenario ${trafficState.scenarioId}` : "Not running"}
+        <CardFooter className="truncate text-[11px] text-muted-foreground">
+          {trafficState ? trafficState.scenarioId : "Not running"}
         </CardFooter>
       </Card>
-      <Card>
-        <CardHeader>
-          <CardDescription>Emergency Presence</CardDescription>
-          <CardTitle className="text-xl font-semibold">
+      <Card size="sm">
+        <CardHeader className="gap-1">
+          <CardDescription>Emergency</CardDescription>
+          <CardTitle className="text-lg font-semibold">
             {emergencyPresent ? "Detected" : "None"}
           </CardTitle>
           <CardAction>
@@ -92,14 +90,14 @@ export function JunctionSummaryCards({
             </Badge>
           </CardAction>
         </CardHeader>
-        <CardFooter className="text-xs text-muted-foreground">
-          Pre-emption overrides normal control when detected
+        <CardFooter className="text-[11px] text-muted-foreground">
+          Pre-emption overrides normal control
         </CardFooter>
       </Card>
-      <Card>
-        <CardHeader>
-          <CardDescription>Last Reason Code</CardDescription>
-          <CardTitle className="text-xl font-semibold">
+      <Card size="sm">
+        <CardHeader className="gap-1">
+          <CardDescription>Reason Code</CardDescription>
+          <CardTitle className="truncate text-lg font-semibold">
             {decision ? REASON_LABELS[decision.reasonCode] : "—"}
           </CardTitle>
           <CardAction>
@@ -109,7 +107,7 @@ export function JunctionSummaryCards({
             </Badge>
           </CardAction>
         </CardHeader>
-        <CardFooter className="text-xs text-muted-foreground">
+        <CardFooter className="truncate text-[11px] text-muted-foreground">
           {decision?.reasonDetail ?? "No override detail"}
         </CardFooter>
       </Card>
