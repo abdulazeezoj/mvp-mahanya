@@ -6,8 +6,8 @@ import {
   congestionLevel,
   contextBlocks,
   crosswalkAnchors,
-  directionLabelAnchors,
   DIRECTIONS,
+  directionLabelAnchors,
   junctionCenter,
   junctionPavementOutline,
   motorcycleShape,
@@ -208,15 +208,11 @@ describe("directionLabelAnchors", () => {
 
 describe("congestionLevel", () => {
   it("is 0 for an empty approach", () => {
-    expect(
-      congestionLevel({ queueLength: 0, vehicleCount: 0 }),
-    ).toBe(0);
+    expect(congestionLevel({ queueLength: 0, vehicleCount: 0 })).toBe(0);
   });
 
   it("saturates at 1 for a long queue", () => {
-    expect(
-      congestionLevel({ queueLength: 100, vehicleCount: 100 }),
-    ).toBe(1);
+    expect(congestionLevel({ queueLength: 100, vehicleCount: 100 })).toBe(1);
   });
 
   it("falls back to a damped vehicle count when nothing is formally queued", () => {

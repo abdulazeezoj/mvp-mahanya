@@ -113,11 +113,16 @@ export function signalPositions(
 
     const px = -dy;
     const py = dx;
-    // Clears the road's own half-width plus the crossing road's ribbon
-    // near the junction mouth, so the housing stands fully off the
-    // pavement rather than overlapping its edge.
-    const lateralOffset = roadWidth * 1.7;
-    const setback = roadWidth * 0.4;
+    // Positions the housing at this approach's own near-right corner —
+    // just enough lateral offset to clear this lane's own half-width, and
+    // enough setback (along the approach, away from the junction) to clear
+    // the crossing road's ribbon. Kept deliberately modest: a larger
+    // lateral offset (previously 1.7x roadWidth) pushed the housing past
+    // this arm's own corner and into the next arm's territory, so it
+    // visually read as belonging to the wrong approach — e.g. the actual
+    // north signal appearing to stand beside the east road.
+    const lateralOffset = roadWidth * 0.85;
+    const setback = roadWidth * 0.65;
 
     const light: [number, number] = [
       inner[0] + px * lateralOffset - dx * setback,

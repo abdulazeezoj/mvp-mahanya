@@ -362,19 +362,16 @@ export function JunctionPixiCanvas({
     for (const direction of DIRECTIONS) {
       const pos = positions[direction];
       if (!pos) continue;
-      const light = toSceneSpace(bounds, pos.light);
       const stop = toSceneSpace(bounds, pos.stop);
-      // Mast arm reaching from the housing's footing back toward the stop
-      // line, with a small mounting flange at each end — reads as an
-      // anchored metal arm rather than a stray line on the pavement.
-      scene
-        .moveTo(stop[0], stop[1])
-        .lineTo(light[0], light[1])
-        .stroke({
-          width: lightRadius * 0.22,
-          color: SIGNAL_HOUSING,
-          alpha: 0.75,
-        });
+      // A small stop-line marker only — no line drawn out to the signal
+      // housing itself. The housing sits off to the side of its own arm
+      // (see signalPositions' lateral offset, tuned to clear the crossing
+      // road's ribbon), which for some arms is nearly as far as the
+      // adjacent arm's own stop line; a straight connector between the two
+      // then reads as a diagonal slash straight across the junction rather
+      // than a mast arm. The housing's own pole + footing (drawn in
+      // drawSignals) already grounds it as a mounted structure, so no
+      // separate connector is needed here.
       scene
         .circle(stop[0], stop[1], lightRadius * 0.28)
         .fill({ color: SIGNAL_HOUSING, alpha: 0.55 });
@@ -757,7 +754,13 @@ export function JunctionPixiCanvas({
         const vehicleLayer = new Graphics();
         const labelLayer = new Container();
         const world = new Container();
-        world.addChild(contextLayer, scene, congestionLayer, vehicleLayer, labelLayer);
+        world.addChild(
+          contextLayer,
+          scene,
+          congestionLayer,
+          vehicleLayer,
+          labelLayer,
+        );
         app.stage.addChild(world);
 
         // HUD layer: fixed in screen space regardless of zoom — vignette
@@ -791,6 +794,7 @@ export function JunctionPixiCanvas({
         app.renderer.background.color = colors.background;
         drawContext(colors);
         drawStatic(colors);
+        drawSignals(colors);
         drawCongestion();
         drawHud(colors);
 
@@ -937,8 +941,7 @@ export function JunctionPixiCanvas({
 
   const phaseProgressPct = trafficState
     ? Math.min(
-        (trafficState.elapsedPhaseTimeSec / PHASE_PROGRESS_REFERENCE_SEC) *
-          100,
+        (trafficState.elapsedPhaseTimeSec / PHASE_PROGRESS_REFERENCE_SEC) * 100,
         100,
       )
     : 0;
