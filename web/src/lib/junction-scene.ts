@@ -1,5 +1,6 @@
 import type {
   ApproachDirection,
+  ApproachState,
   LaneGeometry,
   NetworkBounds,
   NetworkGeometry,
@@ -405,3 +406,180 @@ export const VEHICLE_SHAPE: Record<
   truck: truckShape,
   emergency: carShape,
 };
+
+export const DIRECTION_LABEL: Record<ApproachDirection, string> = {
+  north: "North",
+  south: "South",
+  east: "East",
+  west: "West",
+};
+
+export const DIRECTION_SHORT_LABEL: Record<ApproachDirection, string> = {
+  north: "N",
+  south: "S",
+  east: "E",
+  west: "W",
+};
+
+/** Outward (away-from-center) unit vector for the given direction's inbound lane, SUMO map space — undefined if that approach has no inbound lane. */
+function armOutward(
+  geometry: NetworkGeometry,
+  direction: ApproachDirection,
+): [number, number] | undefined {
+  const inLane = geometry.lanes.find(
+    (lane) => lane.direction === direction && lane.kind === "in",
+  );
+  if (!inLane) return undefined;
+  const outer = outerEndpoint(inLane);
+  const inner = innerEndpoint(inLane);
+  if (!outer || !inner) return undefined;
+  const tx = inner[0] - outer[0];
+  const ty = inner[1] - outer[1];
+  const length = Math.hypot(tx, ty) || 1;
+  return [-tx / length, -ty / length];
+}
+
+/** A label anchor per approach direction, set back from the junction center along that arm — for "North"/"South"/... captions. SUMO map space. */
+export function directionLabelAnchors(
+  geometry: NetworkGeometry,
+  distance: number,
+): Partial<Record<ApproachDirection, ScenePoint>> {
+  const center = junctionCenter(geometry);
+  const anchors: Partial<Record<ApproachDirection, ScenePoint>> = {};
+  for (const direction of DIRECTIONS) {
+    const outward = armOutward(geometry, direction);
+    if (!outward) continue;
+    anchors[direction] = {
+      x: center.x + outward[0] * distance,
+      y: center.y + outward[1] * distance,
+    };
+  }
+  return anchors;
+}
+
+/**
+ * How congested a single approach reads, 0 (free-flowing) to 1 (saturated) —
+ * driven primarily by queue length, falling back to a damped vehicle count
+ * when nothing is formally queued yet. Purely a rendering heuristic (lane
+ * tint), not a scheduler input.
+ */
+const CONGESTION_QUEUE_SATURATION = 8;
+
+export function congestionLevel(
+  approach: Pick<ApproachState, "queueLength" | "vehicleCount">,
+): number {
+  const raw =
+    approach.queueLength > 0
+      ? approach.queueLength
+      : approach.vehicleCount * 0.5;
+  return Math.max(0, Math.min(1, raw / CONGESTION_QUEUE_SATURATION));
+}
+
+const CONGESTION_STOPS: [number, [number, number, number]][] = [
+  [0, [34, 197, 94]], // free-flowing — green-500
+  [0.5, [234, 179, 8]], // building — amber-500
+  [1, [239, 68, 68]], // saturated — red-500
+];
+
+/** Green -> amber -> red blend for a 0..1 congestion level, as 0xRRGGBB. */
+export function congestionColor(level: number): number {
+  const clamped = Math.max(0, Math.min(1, level));
+  let lo = CONGESTION_STOPS[0];
+  let hi = CONGESTION_STOPS[CONGESTION_STOPS.length - 1];
+  for (let i = 0; i < CONGESTION_STOPS.length - 1; i++) {
+    if (
+      clamped >= CONGESTION_STOPS[i][0] &&
+      clamped <= CONGESTION_STOPS[i + 1][0]
+    ) {
+      lo = CONGESTION_STOPS[i];
+      hi = CONGESTION_STOPS[i + 1];
+      break;
+    }
+  }
+  const span = hi[0] - lo[0] || 1;
+  const t = (clamped - lo[0]) / span;
+  const r = Math.round(lo[1][0] + (hi[1][0] - lo[1][0]) * t);
+  const g = Math.round(lo[1][1] + (hi[1][1] - lo[1][1]) * t);
+  const b = Math.round(lo[1][2] + (hi[1][2] - lo[1][2]) * t);
+  return ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
+}
+
+export interface ContextBlock {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  kind: "building" | "green";
+}
+
+/** Deterministic 32-bit PRNG (mulberry32) — context blocks must stay stable across re-renders of the same network, not reshuffle every draw. */
+function mulberry32(seed: number): () => number {
+  let state = seed >>> 0;
+  return () => {
+    state = (state + 0x6d2b79f5) | 0;
+    let t = Math.imul(state ^ (state >>> 15), 1 | state);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function hashBounds(bounds: NetworkBounds): number {
+  const mix = (n: number) =>
+    Math.imul(Math.round(n * 97) ^ 0x9e3779b9, 2654435761);
+  return (
+    (mix(bounds.minX) ^
+      mix(bounds.minY) ^
+      mix(bounds.maxX) ^
+      mix(bounds.maxY)) >>>
+    0
+  );
+}
+
+/**
+ * Sparse, low-key building/green-space silhouettes scattered around the
+ * junction bounds so the plaza reads as sitting in a real urban context
+ * rather than floating on an empty canvas. Deterministic per network (same
+ * bounds -> same layout) so it doesn't reshuffle on every re-render; purely
+ * decorative, drawn under the road so any overlap is covered by pavement.
+ */
+export function contextBlocks(
+  geometry: NetworkGeometry,
+  roadWidth: number,
+): ContextBlock[] {
+  const { bounds } = geometry;
+  const width = bounds.maxX - bounds.minX;
+  const height = bounds.maxY - bounds.minY;
+  if (width <= 0 || height <= 0) return [];
+
+  const center = junctionCenter(geometry);
+  const rand = mulberry32(hashBounds(bounds) || 1);
+  const cellSize = Math.max(roadWidth * 3, 1);
+  const cols = Math.max(3, Math.round(width / cellSize));
+  const rows = Math.max(3, Math.round(height / cellSize));
+  const clearRadius = roadWidth * 4;
+
+  const blocks: ContextBlock[] = [];
+  for (let cx = 0; cx < cols; cx++) {
+    for (let cy = 0; cy < rows; cy++) {
+      const cellW = width / cols;
+      const cellH = height / rows;
+      const px = bounds.minX + (cx + 0.5) * cellW;
+      const py = bounds.minY + (cy + 0.5) * cellH;
+      if (Math.hypot(px - center.x, py - center.y) < clearRadius) continue;
+      if (rand() < 0.45) continue;
+      const kind: ContextBlock["kind"] = rand() < 0.3 ? "green" : "building";
+      const w = cellW * (0.35 + rand() * 0.35);
+      const h = cellH * (0.35 + rand() * 0.35);
+      const jitterX = (rand() - 0.5) * cellW * 0.2;
+      const jitterY = (rand() - 0.5) * cellH * 0.2;
+      blocks.push({
+        x: px - w / 2 + jitterX,
+        y: py - h / 2 + jitterY,
+        w,
+        h,
+        kind,
+      });
+    }
+  }
+  return blocks;
+}
