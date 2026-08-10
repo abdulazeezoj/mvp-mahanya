@@ -1,8 +1,14 @@
 "use client";
 
+import {
+  ArrowsOutIcon,
+  MagnifyingGlassMinusIcon,
+  MagnifyingGlassPlusIcon,
+} from "@phosphor-icons/react";
 import { Application, Container, Graphics, Text } from "pixi.js";
 import * as React from "react";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   congestionColor,
   congestionLevel,
@@ -71,6 +77,22 @@ const FRAME_MARGIN = 0.9;
 const LANE_WIDTH_RATIO = 0.055;
 const LANES_PER_DIRECTION = 3;
 
+// How far the cosmetic pavement plaza reaches past each arm's shared
+// corner notch, as a multiple of one direction's lane block width. Kept
+// deliberately small (rather than the ~1.5x a literal SUMO junction mouth
+// would suggest) because every other near-junction feature — signal
+// ticks, lane arrows, the crosswalk — is anchored past this reach and
+// stacks on top of it; a wide plaza just for its own sake eats into the
+// only real budget available for open, "car is actually driving here"
+// road, since the network's real per-arm length is fixed by the
+// calibrated SUMO net and can't grow to compensate.
+const ARM_REACH_RATIO = 0.85;
+
+// Gap between the lane arrows and the crosswalk, as a multiple of one
+// lane's own width — see ARM_REACH_RATIO for why this is kept tight
+// rather than generous.
+const CROSSWALK_GAP_RATIO = 0.3;
+
 function laneWidthFor(bounds: NetworkGeometry["bounds"]): number {
   return (
     Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY) *
@@ -97,7 +119,7 @@ function pavementGeometryFor(bounds: NetworkGeometry["bounds"]) {
   const roadWidth = roadWidthFor(bounds);
   return {
     roadWidth,
-    armReach: roadWidth * 1.5,
+    armReach: roadWidth * ARM_REACH_RATIO,
     cornerRadius: roadWidth * 0.4,
   };
 }
@@ -115,7 +137,7 @@ function signalTickGeometryFor(laneWidth: number) {
   return {
     span: laneWidth * 0.78,
     thickness: laneWidth * 0.32,
-    gap: laneWidth * 0.22,
+    gap: laneWidth * 0.15,
   };
 }
 
@@ -129,7 +151,7 @@ function laneArrowGeometryFor(laneWidth: number) {
   return {
     length: laneWidth * 1.1,
     width: laneWidth * 0.5,
-    gap: laneWidth * 0.35,
+    gap: laneWidth * 0.25,
   };
 }
 
@@ -209,6 +231,39 @@ function fitTransform(
 
 function easeInOutCubic(t: number): number {
   return t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2;
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(Math.max(value, min), max);
+}
+
+// Zoom is a multiplier on top of the fit-to-canvas scale (1 = the whole
+// network visible, matching the previous fixed view); MAX_ZOOM_LEVEL is
+// how far in a viewer can get before individual lanes and vehicles fill
+// the frame.
+const MIN_ZOOM_LEVEL = 1;
+const MAX_ZOOM_LEVEL = 6;
+const WHEEL_ZOOM_SENSITIVITY = 0.0016;
+const ZOOM_BUTTON_STEP = 1.5;
+
+/**
+ * How far the view center may pan from the scene's own center at a given
+ * zoom level, per axis — derived so the visible viewport (`sceneSize /
+ * zoom` wide) can never leave the scene entirely: half that viewport is
+ * `sceneSize / (2 * zoom)`, so the center can move at most `sceneSize / 2
+ * - sceneSize / (2 * zoom)` before the far edge of the scene would show
+ * through. At zoom 1 (the whole scene already visible) this is exactly
+ * 0 — panning does nothing until a viewer has actually zoomed in.
+ */
+function clampPan(
+  pan: { x: number; y: number },
+  zoom: number,
+  sceneW: number,
+  sceneH: number,
+): { x: number; y: number } {
+  const maxX = (sceneW / 2) * (1 - 1 / zoom);
+  const maxY = (sceneH / 2) * (1 - 1 / zoom);
+  return { x: clamp(pan.x, -maxX, maxX), y: clamp(pan.y, -maxY, maxY) };
 }
 
 function shortestAngleDelta(from: number, to: number): number {
@@ -338,7 +393,7 @@ function strokeRibbonSides(
 }
 
 interface VehicleSprite {
-  container: Graphics;
+  container: Container;
   body: Graphics;
   beacon?: Graphics;
   beaconSize: number;
@@ -366,7 +421,7 @@ export function JunctionPixiCanvas({
   const sceneRef = React.useRef<Graphics | null>(null);
   const congestionLayerRef = React.useRef<Graphics | null>(null);
   const signalLayerRef = React.useRef<Container | null>(null);
-  const vehicleLayerRef = React.useRef<Graphics | null>(null);
+  const vehicleLayerRef = React.useRef<Container | null>(null);
   const labelLayerRef = React.useRef<Container | null>(null);
   const labelTextsRef = React.useRef<Partial<Record<ApproachDirection, Text>>>(
     {},
@@ -374,6 +429,15 @@ export function JunctionPixiCanvas({
   const signalGraphicsRef = React.useRef<Partial<Record<string, Graphics>>>({});
   const vehiclesRef = React.useRef<Map<string, VehicleSprite>>(new Map());
   const geometryRef = React.useRef(geometry);
+  const zoomRef = React.useRef(MIN_ZOOM_LEVEL);
+  const panRef = React.useRef({ x: 0, y: 0 });
+  const viewControlsRef = React.useRef<{
+    zoomIn: () => void;
+    zoomOut: () => void;
+    reset: () => void;
+  } | null>(null);
+  const cleanupInteractionRef = React.useRef<(() => void) | null>(null);
+  const [zoomPct, setZoomPct] = React.useState(100);
 
   geometryRef.current = geometry;
 
@@ -425,7 +489,7 @@ export function JunctionPixiCanvas({
     const tickOuterEdge = armReach + tick.gap + tick.thickness;
     const arrowCenterDistance = tickOuterEdge + arrow.gap + arrow.length / 2;
     const arrowOuterEdge = arrowCenterDistance + arrow.length / 2;
-    const crossGap = laneWidth * 0.4;
+    const crossGap = laneWidth * CROSSWALK_GAP_RATIO;
     const crosswalkDepth = laneWidth * 1.2;
     const crosswalkDistance = arrowOuterEdge + crossGap + crosswalkDepth / 2;
     const crosswalkNearDistance = crosswalkDistance - crosswalkDepth / 2;
@@ -713,19 +777,74 @@ export function JunctionPixiCanvas({
     if (!layer) return;
     const geo = geometryRef.current;
     const { bounds } = geo;
-    const roadWidth = roadWidthFor(bounds);
+    const { roadWidth, armReach } = pavementGeometryFor(bounds);
+    const laneWidth = laneWidthFor(bounds);
+    const center = junctionCenter(geo);
+
+    // Mirror drawStatic's tick → arrow → crosswalk distance chain so the
+    // tint's near edge lines up exactly with where the crosswalk ends —
+    // the tint represents queued traffic on the open road, and must never
+    // wash over the plaza, signal ticks, lane arrows, or crosswalk
+    // stripes those fixed markings need to stay crisp and legible.
+    const tick = signalTickGeometryFor(laneWidth);
+    const arrow = laneArrowGeometryFor(laneWidth);
+    const tickOuterEdge = armReach + tick.gap + tick.thickness;
+    const arrowCenterDistance = tickOuterEdge + arrow.gap + arrow.length / 2;
+    const arrowOuterEdge = arrowCenterDistance + arrow.length / 2;
+    const crossGap = laneWidth * CROSSWALK_GAP_RATIO;
+    const crosswalkDepth = laneWidth * 1.2;
+    const crosswalkFarDistance = arrowOuterEdge + crossGap + crosswalkDepth;
 
     layer.clear();
     if (!trafficState) return;
 
-    for (const lane of geo.lanes) {
-      if (lane.kind !== "in") continue;
-      const approach = trafficState.approaches[lane.direction];
+    for (const direction of DIRECTIONS) {
+      const approach = trafficState.approaches[direction];
       if (!approach) continue;
       const level = congestionLevel(approach);
       if (level <= 0.02) continue;
-      const scenePoints = lane.shape.map((pt) => toSceneSpace(bounds, pt));
-      const ribbon = offsetRibbon(scenePoints, roadWidth * 0.85);
+
+      const inLane = geo.lanes.find(
+        (lane) => lane.direction === direction && lane.kind === "in",
+      );
+      if (!inLane) continue;
+      const outerMap = inLane.shape[0];
+      const innerMap = inLane.shape[inLane.shape.length - 1];
+      const tx = innerMap[0] - outerMap[0];
+      const ty = innerMap[1] - outerMap[1];
+      const segLen = Math.hypot(tx, ty) || 1;
+      const dirVec: [number, number] = [tx / segLen, ty / segLen];
+      const outwardVec: [number, number] = [-dirVec[0], -dirVec[1]];
+      const perpVec = mapPerp(dirVec);
+      const outerDist = Math.hypot(
+        outerMap[0] - center.x,
+        outerMap[1] - center.y,
+      );
+      if (outerDist <= crosswalkFarDistance) continue;
+
+      // A short centerline offset `roadWidth / 2` along `perpVec` — the
+      // same lateral convention drawStatic's lane arrows use for the
+      // inbound cosmetic lane block (offsets 0..+roadWidth from the real
+      // lane's own centerline) — so the ribbon `offsetRibbon` builds from
+      // it lands on just the inbound lanes, not the outbound ones on the
+      // carriageway's other half.
+      const laneCenterDistance = roadWidth / 2;
+      const nearPoint: [number, number] = [
+        center.x +
+          outwardVec[0] * crosswalkFarDistance +
+          perpVec[0] * laneCenterDistance,
+        center.y +
+          outwardVec[1] * crosswalkFarDistance +
+          perpVec[1] * laneCenterDistance,
+      ];
+      const farPoint: [number, number] = [
+        center.x + outwardVec[0] * outerDist + perpVec[0] * laneCenterDistance,
+        center.y + outwardVec[1] * outerDist + perpVec[1] * laneCenterDistance,
+      ];
+      const scenePoints = [nearPoint, farPoint].map((pt) =>
+        toSceneSpace(bounds, pt),
+      );
+      const ribbon = offsetRibbon(scenePoints, roadWidth * 0.94);
       if (ribbon.length === 0) continue;
       // Low alpha so the dashed lane markings underneath stay legible —
       // this is a wash over the asphalt, not an opaque overlay.
@@ -769,7 +888,7 @@ export function JunctionPixiCanvas({
             alpha: 0.7,
           });
 
-        const container = new Graphics();
+        const container = new Container();
         container.addChild(body);
         let beacon: Graphics | undefined;
         if (isEmergency) {
@@ -826,7 +945,7 @@ export function JunctionPixiCanvas({
     }
   }, [trafficState]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: mounts the Pixi Application exactly once; drawStatic/drawSignals/drawCongestion are invoked by the effects below on subsequent updates via refs, not re-run here.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: mounts the Pixi Application exactly once; drawStatic/drawSignals/drawCongestion/syncVehicles are invoked by the effects below on subsequent updates via refs, not re-run here.
   React.useEffect(() => {
     let cancelled = false;
     const app = new Application();
@@ -857,7 +976,7 @@ export function JunctionPixiCanvas({
         const scene = new Graphics();
         const congestionLayer = new Graphics();
         const signalLayer = new Container();
-        const vehicleLayer = new Graphics();
+        const vehicleLayer = new Container();
         const labelLayer = new Container();
         const world = new Container();
         world.addChild(
@@ -879,20 +998,199 @@ export function JunctionPixiCanvas({
         drawStatic();
         drawSignals();
         drawCongestion();
+        // The traffic-state WebSocket can (and, since it fires the moment a
+        // scenario is selected, routinely does) deliver its first message
+        // before this async `app.init()` resolves — that update's own
+        // reactive effect below fires while `appRef.current` is still null
+        // and no-ops, and won't re-fire on its own until the *next* state
+        // update arrives. Without this call, vehicles would sit invisible
+        // until then instead of appearing with everything else's first
+        // paint.
+        syncVehicles();
 
-        app.ticker.add(() => {
+        // Current scene extent + the fit-to-canvas base scale, recomputed
+        // on demand (not cached) since `resizeTo: host` can change
+        // `app.screen` at any time — interaction handlers below need this
+        // to convert between screen pixels and scene (map) coordinates.
+        const getFit = () => {
           const geo = geometryRef.current;
           const { bounds } = geo;
           const sceneW = bounds.maxX - bounds.minX || 1;
           const sceneH = bounds.maxY - bounds.minY || 1;
-          const { scale, offsetX, offsetY } = fitTransform(
-            app.screen.width,
-            app.screen.height,
+          return {
+            sceneW,
+            sceneH,
+            ...fitTransform(
+              app.screen.width,
+              app.screen.height,
+              sceneW,
+              sceneH,
+            ),
+          };
+        };
+
+        const getTransform = () => {
+          const { sceneW, sceneH, scale: fitScale } = getFit();
+          const scale = fitScale * zoomRef.current;
+          const centerX = sceneW / 2 + panRef.current.x;
+          const centerY = sceneH / 2 + panRef.current.y;
+          return {
+            scale,
+            posX: app.screen.width / 2 - centerX * scale,
+            posY: app.screen.height / 2 - centerY * scale,
+          };
+        };
+
+        const screenToScene = (sx: number, sy: number): [number, number] => {
+          const { scale, posX, posY } = getTransform();
+          return [(sx - posX) / scale, (sy - posY) / scale];
+        };
+
+        // Zooms so the scene point currently under (screenX, screenY)
+        // stays under it after the zoom change — the standard "zoom to
+        // cursor" (or to pinch midpoint) behavior.
+        const setZoomAt = (
+          nextZoomRaw: number,
+          screenX: number,
+          screenY: number,
+        ) => {
+          const { sceneW, sceneH, scale: fitScale } = getFit();
+          const nextZoom = clamp(nextZoomRaw, MIN_ZOOM_LEVEL, MAX_ZOOM_LEVEL);
+          const [sceneX, sceneY] = screenToScene(screenX, screenY);
+          const newScale = fitScale * nextZoom;
+          const centerX = sceneX - (screenX - app.screen.width / 2) / newScale;
+          const centerY = sceneY - (screenY - app.screen.height / 2) / newScale;
+          zoomRef.current = nextZoom;
+          panRef.current = clampPan(
+            { x: centerX - sceneW / 2, y: centerY - sceneH / 2 },
+            nextZoom,
             sceneW,
             sceneH,
           );
+          setZoomPct(Math.round(nextZoom * 100));
+        };
+
+        const panBy = (dxScreen: number, dyScreen: number) => {
+          const { sceneW, sceneH } = getFit();
+          const { scale } = getTransform();
+          panRef.current = clampPan(
+            {
+              x: panRef.current.x - dxScreen / scale,
+              y: panRef.current.y - dyScreen / scale,
+            },
+            zoomRef.current,
+            sceneW,
+            sceneH,
+          );
+        };
+
+        viewControlsRef.current = {
+          zoomIn: () =>
+            setZoomAt(
+              zoomRef.current * ZOOM_BUTTON_STEP,
+              app.screen.width / 2,
+              app.screen.height / 2,
+            ),
+          zoomOut: () =>
+            setZoomAt(
+              zoomRef.current / ZOOM_BUTTON_STEP,
+              app.screen.width / 2,
+              app.screen.height / 2,
+            ),
+          reset: () => {
+            zoomRef.current = MIN_ZOOM_LEVEL;
+            panRef.current = { x: 0, y: 0 };
+            setZoomPct(100);
+          },
+        };
+
+        // Pointer-based drag-to-pan and two-finger pinch-to-zoom — Pointer
+        // Events unify mouse, touch, and pen, so this one set of handlers
+        // covers drag-panning on desktop and single-finger panning on
+        // tablet/mobile; a second concurrent pointer escalates to pinch.
+        const activePointers = new Map<number, { x: number; y: number }>();
+        let pinchStartDist: number | null = null;
+
+        const midpoint = () => {
+          const pts = [...activePointers.values()];
+          return {
+            x: (pts[0].x + pts[1].x) / 2,
+            y: (pts[0].y + pts[1].y) / 2,
+          };
+        };
+        const pointerDist = () => {
+          const pts = [...activePointers.values()];
+          return Math.hypot(pts[0].x - pts[1].x, pts[0].y - pts[1].y);
+        };
+
+        const onPointerDown = (e: PointerEvent) => {
+          app.canvas.setPointerCapture(e.pointerId);
+          const rect = app.canvas.getBoundingClientRect();
+          activePointers.set(e.pointerId, {
+            x: e.clientX - rect.left,
+            y: e.clientY - rect.top,
+          });
+          if (activePointers.size === 2) pinchStartDist = pointerDist();
+        };
+        const onPointerMove = (e: PointerEvent) => {
+          const prev = activePointers.get(e.pointerId);
+          if (!prev) return;
+          const rect = app.canvas.getBoundingClientRect();
+          const next = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+
+          if (activePointers.size === 2) {
+            const prevMid = midpoint();
+            activePointers.set(e.pointerId, next);
+            const dist = pointerDist();
+            const mid = midpoint();
+            if (pinchStartDist && pinchStartDist > 0) {
+              setZoomAt(
+                zoomRef.current * (dist / pinchStartDist),
+                mid.x,
+                mid.y,
+              );
+            }
+            panBy(mid.x - prevMid.x, mid.y - prevMid.y);
+            pinchStartDist = dist;
+          } else if (activePointers.size === 1) {
+            activePointers.set(e.pointerId, next);
+            panBy(next.x - prev.x, next.y - prev.y);
+          }
+        };
+        const onPointerUp = (e: PointerEvent) => {
+          activePointers.delete(e.pointerId);
+          pinchStartDist = activePointers.size === 2 ? pointerDist() : null;
+        };
+        const onWheel = (e: WheelEvent) => {
+          e.preventDefault();
+          const rect = app.canvas.getBoundingClientRect();
+          const factor = Math.exp(-e.deltaY * WHEEL_ZOOM_SENSITIVITY);
+          setZoomAt(
+            zoomRef.current * factor,
+            e.clientX - rect.left,
+            e.clientY - rect.top,
+          );
+        };
+
+        app.canvas.style.touchAction = "none";
+        app.canvas.style.cursor = "grab";
+        app.canvas.addEventListener("pointerdown", onPointerDown);
+        app.canvas.addEventListener("pointermove", onPointerMove);
+        app.canvas.addEventListener("pointerup", onPointerUp);
+        app.canvas.addEventListener("pointercancel", onPointerUp);
+        app.canvas.addEventListener("wheel", onWheel, { passive: false });
+        cleanupInteractionRef.current = () => {
+          app.canvas.removeEventListener("pointerdown", onPointerDown);
+          app.canvas.removeEventListener("pointermove", onPointerMove);
+          app.canvas.removeEventListener("pointerup", onPointerUp);
+          app.canvas.removeEventListener("pointercancel", onPointerUp);
+          app.canvas.removeEventListener("wheel", onWheel);
+        };
+
+        app.ticker.add(() => {
+          const { scale, posX, posY } = getTransform();
           world.scale.set(scale);
-          world.position.set(offsetX, offsetY);
+          world.position.set(posX, posY);
 
           // Direction captions live in world space (so they pan with the
           // plaza) but counter-scale against the world zoom so they stay a
@@ -963,6 +1261,9 @@ export function JunctionPixiCanvas({
 
     return () => {
       cancelled = true;
+      cleanupInteractionRef.current?.();
+      cleanupInteractionRef.current = null;
+      viewControlsRef.current = null;
       appRef.current?.destroy(true, { children: true });
       appRef.current = null;
       sceneRef.current = null;
@@ -1022,6 +1323,45 @@ export function JunctionPixiCanvas({
                 ? `${Math.round(trafficState.elapsedPhaseTimeSec)}s`
                 : "—"}
             </Badge>
+          </div>
+
+          <div className="pointer-events-auto flex items-center gap-1 rounded-md border border-border bg-background/80 p-0.5 backdrop-blur-sm">
+            <Badge
+              variant="outline"
+              className="mr-0.5 hidden border-none font-mono tabular-nums sm:inline-flex"
+            >
+              {zoomPct}%
+            </Badge>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              aria-label="Zoom out"
+              disabled={zoomPct <= 100}
+              onClick={() => viewControlsRef.current?.zoomOut()}
+            >
+              <MagnifyingGlassMinusIcon />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              aria-label="Zoom in"
+              disabled={zoomPct >= MAX_ZOOM_LEVEL * 100}
+              onClick={() => viewControlsRef.current?.zoomIn()}
+            >
+              <MagnifyingGlassPlusIcon />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              aria-label="Reset view"
+              disabled={zoomPct <= 100}
+              onClick={() => viewControlsRef.current?.reset()}
+            >
+              <ArrowsOutIcon />
+            </Button>
           </div>
         </div>
 
