@@ -5,6 +5,7 @@ import type {
   NetworkBounds,
   NetworkGeometry,
   Phase,
+  TrafficState,
   VehicleType,
 } from "@/lib/types";
 
@@ -84,16 +85,21 @@ export function toSceneSpace(
 }
 
 export interface SignalPosition {
-  light: [number, number];
+  /** The lane's stop line — where the inbound lane meets the junction. SUMO map space. */
   stop: [number, number];
-  /** Unit vector along the lane's travel direction (into the junction), SUMO map space — the housing's long side is rotated to run parallel to this. */
+  /** Unit vector along the lane's travel direction (into the junction), SUMO map space. */
   direction: [number, number];
 }
 
-/** Perpendicular-offset light placement beside (clear of) the lane, near the stop line, in SUMO map space. */
+/**
+ * Each approach's stop line and travel direction, in SUMO map space —
+ * everything needed to draw a signal indicator bar directly across the
+ * lane at the stop line, the way SUMO-GUI itself renders a traffic light
+ * state (a short colored bar at the connection, not a free-standing
+ * housing beside the road).
+ */
 export function signalPositions(
   geometry: NetworkGeometry,
-  roadWidth: number,
 ): Partial<Record<ApproachDirection, SignalPosition>> {
   const positions: Partial<Record<ApproachDirection, SignalPosition>> = {};
   for (const direction of DIRECTIONS) {
@@ -111,72 +117,9 @@ export function signalPositions(
     const dx = tx / length;
     const dy = ty / length;
 
-    const px = -dy;
-    const py = dx;
-    // Positions the housing at this approach's own near-right corner —
-    // just enough lateral offset to clear this lane's own half-width, and
-    // enough setback (along the approach, away from the junction) to clear
-    // the crossing road's ribbon. Kept deliberately modest: a larger
-    // lateral offset (previously 1.7x roadWidth) pushed the housing past
-    // this arm's own corner and into the next arm's territory, so it
-    // visually read as belonging to the wrong approach — e.g. the actual
-    // north signal appearing to stand beside the east road.
-    const lateralOffset = roadWidth * 0.85;
-    const setback = roadWidth * 0.65;
-
-    const light: [number, number] = [
-      inner[0] + px * lateralOffset - dx * setback,
-      inner[1] + py * lateralOffset - dy * setback,
-    ];
-    positions[direction] = { light, stop: inner, direction: [dx, dy] };
+    positions[direction] = { stop: inner, direction: [dx, dy] };
   }
   return positions;
-}
-
-export interface CrosswalkAnchor {
-  /** Stripe-band center point, in SUMO map space. */
-  center: [number, number];
-  /** Unit vector along the lane's travel direction (into the junction), SUMO map space. */
-  direction: [number, number];
-  /** Unit vector across the lane, SUMO map space. */
-  perpendicular: [number, number];
-}
-
-/** A zebra-crossing anchor just outside the junction mouth, one per approach with an inbound lane. */
-export function crosswalkAnchors(
-  geometry: NetworkGeometry,
-  roadWidth: number,
-): Partial<Record<ApproachDirection, CrosswalkAnchor>> {
-  const anchors: Partial<Record<ApproachDirection, CrosswalkAnchor>> = {};
-  for (const direction of DIRECTIONS) {
-    const inLane = geometry.lanes.find(
-      (lane) => lane.direction === direction && lane.kind === "in",
-    );
-    if (!inLane) continue;
-    const outer = outerEndpoint(inLane);
-    const inner = innerEndpoint(inLane);
-    if (!outer || !inner) continue;
-
-    const tx = inner[0] - outer[0];
-    const ty = inner[1] - outer[1];
-    const length = Math.hypot(tx, ty) || 1;
-    const dx = tx / length;
-    const dy = ty / length;
-    const px = -dy;
-    const py = dx;
-
-    const setback = roadWidth * 1.3;
-    const center: [number, number] = [
-      inner[0] - dx * setback,
-      inner[1] - dy * setback,
-    ];
-    anchors[direction] = {
-      center,
-      direction: [dx, dy],
-      perpendicular: [px, py],
-    };
-  }
-  return anchors;
 }
 
 export interface JunctionPavementPoint {
@@ -340,65 +283,36 @@ function polygon(points: [number, number][]): [number, number][] {
   return points;
 }
 
-export function carShape(size: number): [number, number][] {
-  const halfWidth = size * 0.62;
-  const nose = -size;
-  const shoulder = -size * 0.5;
-  const tail = size * 0.75;
+/**
+ * All vehicle shapes are plain axis-aligned rectangles — matching how SUMO
+ * itself renders vehicles from directly overhead — sized differently per
+ * type so they stay visually distinguishable without needing an outline
+ * silhouette (a rounded "nose" reads as a video-game car, not a simulator
+ * replay).
+ */
+function rectangleShape(halfWidth: number, half: number): [number, number][] {
   return polygon([
-    [0, nose],
-    [halfWidth, shoulder],
-    [halfWidth, tail],
-    [-halfWidth, tail],
-    [-halfWidth, shoulder],
+    [-halfWidth, -half],
+    [halfWidth, -half],
+    [halfWidth, half],
+    [-halfWidth, half],
   ]);
+}
+
+export function carShape(size: number): [number, number][] {
+  return rectangleShape(size * 0.5, size * 0.85);
 }
 
 export function motorcycleShape(size: number): [number, number][] {
-  const halfWidth = size * 0.3;
-  const nose = -size;
-  const shoulder = -size * 0.1;
-  const tail = size * 0.8;
-  return polygon([
-    [0, nose],
-    [halfWidth, shoulder],
-    [halfWidth * 0.7, tail],
-    [-halfWidth * 0.7, tail],
-    [-halfWidth, shoulder],
-  ]);
+  return rectangleShape(size * 0.26, size * 0.7);
 }
 
 export function busShape(size: number): [number, number][] {
-  const halfWidth = size * 0.55;
-  const nose = -size;
-  const shoulder = -size * 0.7;
-  const tail = size * 0.9;
-  return polygon([
-    [-halfWidth * 0.75, nose],
-    [halfWidth * 0.75, nose],
-    [halfWidth, shoulder],
-    [halfWidth, tail],
-    [-halfWidth, tail],
-    [-halfWidth, shoulder],
-  ]);
+  return rectangleShape(size * 0.56, size * 1.3);
 }
 
 export function truckShape(size: number): [number, number][] {
-  const cabHalf = size * 0.42;
-  const boxHalf = size * 0.52;
-  const nose = -size;
-  const cabEnd = -size * 0.45;
-  const tail = size * 0.95;
-  return polygon([
-    [-cabHalf, nose],
-    [cabHalf, nose],
-    [cabHalf, cabEnd],
-    [boxHalf, cabEnd],
-    [boxHalf, tail],
-    [-boxHalf, tail],
-    [-boxHalf, cabEnd],
-    [-cabHalf, cabEnd],
-  ]);
+  return rectangleShape(size * 0.5, size * 1.15);
 }
 
 export const VEHICLE_SHAPE: Record<
@@ -444,19 +358,32 @@ function armOutward(
   return [-tx / length, -ty / length];
 }
 
-/** A label anchor per approach direction, set back from the junction center along that arm — for "North"/"South"/... captions. SUMO map space. */
+/**
+ * A label anchor per approach direction, set back from the junction center
+ * along that arm and offset sideways off the road into the grass — for
+ * "North"/"South"/... captions that sit beside the carriageway instead of
+ * printed on top of the lane markings. SUMO map space. `lateralOffset`
+ * defaults to 0 (directly on the centerline) for callers that don't need
+ * the sideways shift.
+ */
 export function directionLabelAnchors(
   geometry: NetworkGeometry,
   distance: number,
+  lateralOffset = 0,
 ): Partial<Record<ApproachDirection, ScenePoint>> {
   const center = junctionCenter(geometry);
   const anchors: Partial<Record<ApproachDirection, ScenePoint>> = {};
   for (const direction of DIRECTIONS) {
     const outward = armOutward(geometry, direction);
     if (!outward) continue;
+    const [ox, oy] = outward;
+    // Perpendicular to the arm, so the label sits beside the road rather
+    // than on its centerline.
+    const px = -oy;
+    const py = ox;
     anchors[direction] = {
-      x: center.x + outward[0] * distance,
-      y: center.y + outward[1] * distance,
+      x: center.x + ox * distance + px * lateralOffset,
+      y: center.y + oy * distance + py * lateralOffset,
     };
   }
   return anchors;
@@ -509,82 +436,11 @@ export function congestionColor(level: number): number {
   return ((r & 0xff) << 16) + ((g & 0xff) << 8) + (b & 0xff);
 }
 
-export interface ContextBlock {
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  kind: "building" | "green";
-}
-
-/** Deterministic 32-bit PRNG (mulberry32) — context blocks must stay stable across re-renders of the same network, not reshuffle every draw. */
-function mulberry32(seed: number): () => number {
-  let state = seed >>> 0;
-  return () => {
-    state = (state + 0x6d2b79f5) | 0;
-    let t = Math.imul(state ^ (state >>> 15), 1 | state);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-function hashBounds(bounds: NetworkBounds): number {
-  const mix = (n: number) =>
-    Math.imul(Math.round(n * 97) ^ 0x9e3779b9, 2654435761);
-  return (
-    (mix(bounds.minX) ^
-      mix(bounds.minY) ^
-      mix(bounds.maxX) ^
-      mix(bounds.maxY)) >>>
-    0
+/** Every approach direction that currently has an emergency vehicle present. */
+export function emergencyDirections(
+  trafficState: TrafficState,
+): ApproachDirection[] {
+  return DIRECTIONS.filter(
+    (direction) => trafficState.approaches[direction]?.hasEmergencyVehicle,
   );
-}
-
-/**
- * Sparse, low-key building/green-space silhouettes scattered around the
- * junction bounds so the plaza reads as sitting in a real urban context
- * rather than floating on an empty canvas. Deterministic per network (same
- * bounds -> same layout) so it doesn't reshuffle on every re-render; purely
- * decorative, drawn under the road so any overlap is covered by pavement.
- */
-export function contextBlocks(
-  geometry: NetworkGeometry,
-  roadWidth: number,
-): ContextBlock[] {
-  const { bounds } = geometry;
-  const width = bounds.maxX - bounds.minX;
-  const height = bounds.maxY - bounds.minY;
-  if (width <= 0 || height <= 0) return [];
-
-  const center = junctionCenter(geometry);
-  const rand = mulberry32(hashBounds(bounds) || 1);
-  const cellSize = Math.max(roadWidth * 3, 1);
-  const cols = Math.max(3, Math.round(width / cellSize));
-  const rows = Math.max(3, Math.round(height / cellSize));
-  const clearRadius = roadWidth * 4;
-
-  const blocks: ContextBlock[] = [];
-  for (let cx = 0; cx < cols; cx++) {
-    for (let cy = 0; cy < rows; cy++) {
-      const cellW = width / cols;
-      const cellH = height / rows;
-      const px = bounds.minX + (cx + 0.5) * cellW;
-      const py = bounds.minY + (cy + 0.5) * cellH;
-      if (Math.hypot(px - center.x, py - center.y) < clearRadius) continue;
-      if (rand() < 0.45) continue;
-      const kind: ContextBlock["kind"] = rand() < 0.3 ? "green" : "building";
-      const w = cellW * (0.35 + rand() * 0.35);
-      const h = cellH * (0.35 + rand() * 0.35);
-      const jitterX = (rand() - 0.5) * cellW * 0.2;
-      const jitterY = (rand() - 0.5) * cellH * 0.2;
-      blocks.push({
-        x: px - w / 2 + jitterX,
-        y: py - h / 2 + jitterY,
-        w,
-        h,
-        kind,
-      });
-    }
-  }
-  return blocks;
 }

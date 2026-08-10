@@ -4,8 +4,6 @@ import {
   carShape,
   congestionColor,
   congestionLevel,
-  contextBlocks,
-  crosswalkAnchors,
   DIRECTIONS,
   directionLabelAnchors,
   junctionCenter,
@@ -46,9 +44,9 @@ describe("junctionCenter", () => {
 });
 
 describe("signalPositions", () => {
-  it("places a light beside (not on) each direction's lane, offset from the stop line", () => {
+  it("places one stop-line position per direction, with a unit travel direction", () => {
     const geometry = makeNetworkGeometry();
-    const positions = signalPositions(geometry, 10);
+    const positions = signalPositions(geometry);
     expect(Object.keys(positions).sort()).toEqual([
       "east",
       "north",
@@ -57,64 +55,21 @@ describe("signalPositions", () => {
     ]);
     for (const pos of Object.values(positions)) {
       if (!pos) continue;
-      const dist = Math.hypot(
-        pos.light[0] - pos.stop[0],
-        pos.light[1] - pos.stop[1],
-      );
-      expect(dist).toBeGreaterThan(0);
       const dirLen = Math.hypot(pos.direction[0], pos.direction[1]);
       expect(dirLen).toBeCloseTo(1, 5);
     }
   });
 
-  it("clears the road's own half-width, not just the centerline", () => {
+  it("puts the stop position at the inbound lane's inner endpoint", () => {
     const geometry = makeNetworkGeometry();
-    const roadWidth = 10;
-    const positions = signalPositions(geometry, roadWidth);
+    const positions = signalPositions(geometry);
     const north = positions.north;
     if (!north) throw new Error("expected a north signal position");
-    const lateralDist = Math.hypot(
-      north.light[0] - north.stop[0],
-      north.light[1] - north.stop[1],
+    const inLane = geometry.lanes.find(
+      (lane) => lane.direction === "north" && lane.kind === "in",
     );
-    expect(lateralDist).toBeGreaterThan(roadWidth / 2);
-  });
-});
-
-describe("crosswalkAnchors", () => {
-  it("places one crosswalk band per direction, further from the stop line than the signal", () => {
-    const geometry = makeNetworkGeometry();
-    const roadWidth = 10;
-    const anchors = crosswalkAnchors(geometry, roadWidth);
-    const signals = signalPositions(geometry, roadWidth);
-    expect(Object.keys(anchors).sort()).toEqual([
-      "east",
-      "north",
-      "south",
-      "west",
-    ]);
-    for (const direction of Object.keys(anchors) as (keyof typeof anchors)[]) {
-      const anchor = anchors[direction];
-      const stop = signals[direction]?.stop;
-      if (!anchor || !stop) continue;
-      const distFromStop = Math.hypot(
-        anchor.center[0] - stop[0],
-        anchor.center[1] - stop[1],
-      );
-      expect(distFromStop).toBeGreaterThan(0);
-      // direction and perpendicular should be unit vectors, at right angles.
-      const dirLen = Math.hypot(anchor.direction[0], anchor.direction[1]);
-      const perpLen = Math.hypot(
-        anchor.perpendicular[0],
-        anchor.perpendicular[1],
-      );
-      expect(dirLen).toBeCloseTo(1, 5);
-      expect(perpLen).toBeCloseTo(1, 5);
-      const dot =
-        anchor.direction[0] * anchor.perpendicular[0] +
-        anchor.direction[1] * anchor.perpendicular[1];
-      expect(dot).toBeCloseTo(0, 5);
-    }
+    if (!inLane) throw new Error("expected a north inbound lane");
+    expect(north.stop).toEqual(inLane.shape[inLane.shape.length - 1]);
   });
 });
 
@@ -241,35 +196,6 @@ describe("congestionColor", () => {
   it("clamps out-of-range levels", () => {
     expect(congestionColor(-5)).toBe(congestionColor(0));
     expect(congestionColor(5)).toBe(congestionColor(1));
-  });
-});
-
-describe("contextBlocks", () => {
-  it("is deterministic for the same network geometry", () => {
-    const geometry = makeNetworkGeometry();
-    const a = contextBlocks(geometry, 10);
-    const b = contextBlocks(geometry, 10);
-    expect(a).toEqual(b);
-  });
-
-  it("only produces building or green blocks with positive extents", () => {
-    const geometry = makeNetworkGeometry();
-    const blocks = contextBlocks(geometry, 10);
-    expect(blocks.length).toBeGreaterThan(0);
-    for (const block of blocks) {
-      expect(["building", "green"]).toContain(block.kind);
-      expect(block.w).toBeGreaterThan(0);
-      expect(block.h).toBeGreaterThan(0);
-    }
-  });
-
-  it("returns nothing for a degenerate (zero-extent) network", () => {
-    expect(
-      contextBlocks(
-        { bounds: { minX: 0, minY: 0, maxX: 0, maxY: 0 }, lanes: [] },
-        10,
-      ),
-    ).toEqual([]);
   });
 });
 

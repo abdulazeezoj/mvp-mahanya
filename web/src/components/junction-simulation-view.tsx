@@ -1,7 +1,9 @@
 "use client";
 
+import { SirenIcon } from "@phosphor-icons/react";
 import { motion } from "motion/react";
 import dynamic from "next/dynamic";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import {
   Card,
   CardContent,
@@ -11,7 +13,7 @@ import {
 } from "@/components/ui/card";
 import {
   DIRECTION_LABEL,
-  DIRECTIONS,
+  emergencyDirections,
   VEHICLE_LABEL,
   VEHICLE_SHAPE,
   VEHICLE_SIZE_SCALE,
@@ -20,9 +22,7 @@ import {
 import type { NetworkGeometry, TrafficState, VehicleType } from "@/lib/types";
 
 function emergencySummary(trafficState: TrafficState): string {
-  const directions = DIRECTIONS.filter(
-    (direction) => trafficState.approaches[direction]?.hasEmergencyVehicle,
-  );
+  const directions = emergencyDirections(trafficState);
   if (directions.length === 0) return "";
   const labels = directions.map((direction) => DIRECTION_LABEL[direction]);
   return `, emergency vehicle present on ${labels.join(", ")}`;
@@ -79,6 +79,21 @@ export function JunctionSimulationView({
           </p>
         ) : (
           <>
+            {trafficState && emergencyDirections(trafficState).length > 0 && (
+              <Alert
+                variant="destructive"
+                className="animate-pulse border-destructive/60 bg-destructive/15"
+              >
+                <SirenIcon />
+                <AlertTitle>Emergency vehicle detected</AlertTitle>
+                <AlertDescription>
+                  Priority approach:{" "}
+                  {emergencyDirections(trafficState)
+                    .map((direction) => DIRECTION_LABEL[direction])
+                    .join(", ")}
+                </AlertDescription>
+              </Alert>
+            )}
             <div role="img" aria-label="Live junction simulation">
               <JunctionPixiCanvas
                 geometry={geometry}
