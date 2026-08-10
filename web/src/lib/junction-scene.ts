@@ -122,6 +122,52 @@ export function signalPositions(
   return positions;
 }
 
+export interface CrosswalkAnchor {
+  /** Stripe-band center point, in SUMO map space. */
+  center: [number, number];
+  /** Unit vector along the lane's travel direction (into the junction), SUMO map space. */
+  direction: [number, number];
+  /** Unit vector across the lane (perpendicular to travel), SUMO map space. */
+  perpendicular: [number, number];
+}
+
+/**
+ * A zebra-crossing anchor per approach, `distance` map-space units out from
+ * the junction center along that arm — the same "distance from center"
+ * convention `directionLabelAnchors` already uses, deliberately *not*
+ * relative to the real inbound lane's own (tiny, close-to-center) stop
+ * line: the drawn carriageway and pavement plaza are a cosmetic widening
+ * anchored on the junction center (see `LANES_PER_DIRECTION` in the
+ * canvas), so a crossing positioned relative to the real stop line would
+ * land deep inside that cosmetic plaza instead of out on the open road
+ * past it. Direction/perpendicular still come from the real inbound
+ * lane's own centerline, for orientation only.
+ */
+export function crosswalkAnchors(
+  geometry: NetworkGeometry,
+  distance: number,
+): Partial<Record<ApproachDirection, CrosswalkAnchor>> {
+  const center = junctionCenter(geometry);
+  const anchors: Partial<Record<ApproachDirection, CrosswalkAnchor>> = {};
+  for (const direction of DIRECTIONS) {
+    const outward = armOutward(geometry, direction);
+    if (!outward) continue;
+    const [ox, oy] = outward;
+    // Travel direction (into the junction) is the reverse of outward.
+    const dx = -ox;
+    const dy = -oy;
+    const px = -dy;
+    const py = dx;
+
+    anchors[direction] = {
+      center: [center.x + ox * distance, center.y + oy * distance],
+      direction: [dx, dy],
+      perpendicular: [px, py],
+    };
+  }
+  return anchors;
+}
+
 export interface JunctionPavementPoint {
   x: number;
   y: number;

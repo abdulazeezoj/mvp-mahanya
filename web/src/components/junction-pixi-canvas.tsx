@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   congestionColor,
   congestionLevel,
+  crosswalkAnchors,
   DIRECTION_LABEL,
   DIRECTIONS,
   directionLabelAnchors,
@@ -80,6 +81,38 @@ function laneWidthFor(bounds: NetworkGeometry["bounds"]): number {
 /** One direction's full lane block (all `LANES_PER_DIRECTION` lanes combined). */
 function roadWidthFor(bounds: NetworkGeometry["bounds"]): number {
   return laneWidthFor(bounds) * LANES_PER_DIRECTION;
+}
+
+/**
+ * The cosmetic pavement plaza's own size, shared between `drawStatic` (which
+ * draws it) and `drawSignals` (which needs to know where its outer edge
+ * is): the real network's inbound lanes connect only a few units from the
+ * junction center, but the widened, multi-lane carriageway this canvas
+ * draws is anchored on `armReach` out from the center instead — so
+ * anything meant to sit "just past the plaza" (signal ticks, the
+ * crosswalk) has to measure from the center + `armReach`, not from the
+ * real, close-in stop line.
+ */
+function pavementGeometryFor(bounds: NetworkGeometry["bounds"]) {
+  const roadWidth = roadWidthFor(bounds);
+  return {
+    roadWidth,
+    armReach: roadWidth * 1.5,
+    cornerRadius: roadWidth * 0.4,
+  };
+}
+
+/**
+ * The per-lane signal tick's own size, shared between `drawSignals` (which
+ * draws the ticks) and `drawStatic` (which draws the crosswalk right after
+ * them) so the crossing always starts exactly where the ticks end.
+ */
+function signalTickGeometryFor(laneWidth: number) {
+  return {
+    length: laneWidth * 0.8,
+    thickness: laneWidth * 0.3,
+    gap: laneWidth * 0.12,
+  };
 }
 
 function toSceneSpaceRounded(
@@ -175,6 +208,66 @@ function drawOffsetDashedLine(
   }
 }
 
+/**
+ * Perpendicular of a map-space unit vector, rotated so that offsetting a
+ * point by it and then converting through `toSceneSpace` moves the same
+ * way on screen as the interior lane-divider offsets in `drawStatic`
+ * (which compute their own perpendicular from already-Y-flipped scene
+ * points). Working entirely in map space and converting whole points
+ * through `toSceneSpace` — rather than flipping vectors by hand — avoids
+ * re-deriving that sign flip at every call site.
+ */
+function mapPerp(dir: [number, number]): [number, number] {
+  return [dir[1], -dir[0]];
+}
+
+/** Corners of a rectangle centered at `center`, `length` long along unit vector `dir` and `thickness` wide along unit vector `perp` — same space as `center` (map or scene, caller's choice, as long as `dir`/`perp` match). */
+function orientedRectCorners(
+  center: [number, number],
+  dir: [number, number],
+  perp: [number, number],
+  length: number,
+  thickness: number,
+): [number, number][] {
+  const hl = length / 2;
+  const ht = thickness / 2;
+  const [cx, cy] = center;
+  const [dx, dy] = dir;
+  const [px, py] = perp;
+  return [
+    [cx + dx * hl + px * ht, cy + dy * hl + py * ht],
+    [cx + dx * hl - px * ht, cy + dy * hl - py * ht],
+    [cx - dx * hl - px * ht, cy - dy * hl - py * ht],
+    [cx - dx * hl + px * ht, cy - dy * hl + py * ht],
+  ];
+}
+
+/**
+ * Strokes only the long sides of a ribbon polygon (as returned by
+ * `offsetRibbon`), skipping its two end caps. Stroking the *whole* ribbon
+ * outline drew a crisp dark line across the end cap nearest the junction —
+ * exactly where that ribbon overlaps the central plaza fill, which has no
+ * stroke of its own — reading as a visible seam between each arm and the
+ * plaza instead of one continuous paved surface.
+ */
+function strokeRibbonSides(
+  g: Graphics,
+  ribbon: [number, number][],
+  width: number,
+  color: number,
+  alpha: number,
+) {
+  const n = ribbon.length / 2;
+  if (n < 2) return;
+  for (const side of [ribbon.slice(0, n), ribbon.slice(n)]) {
+    g.moveTo(side[0][0], side[0][1]);
+    for (let i = 1; i < side.length; i++) {
+      g.lineTo(side[i][0], side[i][1]);
+    }
+    g.stroke({ width, color, alpha });
+  }
+}
+
 interface VehicleSprite {
   container: Graphics;
   body: Graphics;
@@ -221,7 +314,7 @@ export function JunctionPixiCanvas({
     if (!app || !scene) return;
     const geo = geometryRef.current;
     const { bounds } = geo;
-    const roadWidth = roadWidthFor(bounds);
+    const { roadWidth, armReach, cornerRadius } = pavementGeometryFor(bounds);
 
     scene.clear();
 
@@ -229,11 +322,15 @@ export function JunctionPixiCanvas({
     // road corners (rounded concave notches between arms) rather than a
     // plain circle, drawn first so the road ribbons lay cleanly on top of
     // one continuous asphalt surface with no seams.
-    const armReach = roadWidth * 1.5;
-    const cornerRadius = roadWidth * 0.4;
+    // The road ribbons below are drawn `roadWidth * 2` wide (one
+    // direction's lane block on each side of the centerline), so the
+    // pavement outline's own half-width must be sized off that same full
+    // carriageway width — not the one-direction `roadWidth` — or the plaza
+    // ends up half as wide as the ribbons it's meant to cover, leaving
+    // their corners poking out past it.
     const pavement = junctionPavementOutline(
       geo,
-      roadWidth,
+      roadWidth * 2,
       armReach,
       cornerRadius,
     );
@@ -259,12 +356,11 @@ export function JunctionPixiCanvas({
       if (ribbon.length > 0) {
         scene.poly(ribbon.flat()).fill(ASPHALT);
         // A crisp dark edge line where the asphalt meets the grass, the
-        // way SUMO-GUI outlines every lane.
-        scene.poly(ribbon.flat()).stroke({
-          width: roadWidth * 0.02,
-          color: ASPHALT_EDGE,
-          alpha: 0.9,
-        });
+        // way SUMO-GUI outlines every lane — only along the ribbon's two
+        // long sides, not its end caps. The end cap nearest the junction
+        // sits on top of the (unstroked) plaza fill; stroking it too drew
+        // a seam right across the plaza instead of one continuous surface.
+        strokeRibbonSides(scene, ribbon, roadWidth * 0.02, ASPHALT_EDGE, 0.9);
       }
 
       for (let i = 0; i < scenePoints.length - 1; i++) {
@@ -324,6 +420,44 @@ export function JunctionPixiCanvas({
       }
     }
 
+    // Zebra pedestrian crossings, one per approach — alternating white and
+    // asphalt-colored stripes spanning the full carriageway width,
+    // perpendicular to travel. Reading outward from the junction: the
+    // pavement plaza (out to `armReach` from center), then the per-lane
+    // signal ticks (drawn in `drawSignals`, using the same tick geometry),
+    // then this crossing, then the regular dashed lane markings and
+    // approaching traffic — the same ordering real SUMO-GUI renders.
+    // Anchored `armReach` + gaps out from the junction *center*, not the
+    // real (much closer-in) SUMO stop line — see `pavementGeometryFor`.
+    const tick = signalTickGeometryFor(laneWidth);
+    const crossGap = laneWidth * 0.4;
+    const crosswalkDepth = laneWidth * 1.2;
+    const crosswalkDistance =
+      armReach + tick.gap + tick.length + crossGap + crosswalkDepth / 2;
+    const crosswalks = crosswalkAnchors(geo, crosswalkDistance);
+    const stripeCount = 5;
+    const stripeDepth = crosswalkDepth / (2 * stripeCount - 1);
+    const stripeSpan = roadWidth * 2 * 0.94;
+    for (const direction of DIRECTIONS) {
+      const anchor = crosswalks[direction];
+      if (!anchor) continue;
+      for (let i = 0; i < stripeCount; i++) {
+        const delta = (i - (stripeCount - 1) / 2) * stripeDepth * 2;
+        const centerMap: [number, number] = [
+          anchor.center[0] - anchor.direction[0] * delta,
+          anchor.center[1] - anchor.direction[1] * delta,
+        ];
+        const corners = orientedRectCorners(
+          centerMap,
+          anchor.direction,
+          anchor.perpendicular,
+          stripeDepth,
+          stripeSpan,
+        ).map(([x, y]) => toSceneSpace(bounds, [x, y]));
+        scene.poly(corners.flat()).fill({ color: ROAD_PAINT, alpha: 0.85 });
+      }
+    }
+
     // Direction captions ("North"/"South"/...) set back along each arm and
     // offset into the grass beside the road, so a viewer can read
     // orientation without the text sitting on top of the lane markings.
@@ -373,49 +507,55 @@ export function JunctionPixiCanvas({
     if (!app) return;
     const geo = geometryRef.current;
     const { bounds } = geo;
-    const roadWidth = roadWidthFor(bounds);
+    const laneWidth = laneWidthFor(bounds);
+    const { armReach } = pavementGeometryFor(bounds);
+    const center = junctionCenter(geo);
     const positions = signalPositions(geo);
-    // Spans one direction's own lane block, not the full two-direction
-    // carriageway — otherwise it reads as blocking traffic that isn't
-    // actually facing this light.
-    const barLength = roadWidth * 0.85;
-    const barThickness = roadWidth * 0.18;
-    // Pulled back from the stop line, away from the junction center — the
-    // four approaches' stop lines sit close enough together that an
-    // unshifted bar for one approach can visually crowd its neighbors'.
-    const setback = roadWidth * 0.7;
+    // One short, thin tick per simulated lane — not a single bar spanning
+    // the whole direction's lane block — oriented along the lane's own
+    // travel direction (continuing its dashed centerline up to the stop
+    // point) rather than laid crosswise as a gate bar. Positioned
+    // `armReach` + a small gap out from the junction *center* — the edge
+    // of the cosmetic pavement plaza, not the real (much closer-in) SUMO
+    // stop line `pos.stop` — so the ticks sit just past the plaza instead
+    // of buried inside it. Kept in sync with the crosswalk's tick geometry
+    // in `drawStatic`, which starts right where these ticks end.
+    const tick = signalTickGeometryFor(laneWidth);
+    const tickCenterDistance = armReach + tick.gap + tick.length / 2;
 
     for (const direction of DIRECTIONS) {
       const pos = positions[direction];
       if (!pos) continue;
-      let bar = signalGraphicsRef.current[direction];
-      if (!bar) {
-        bar = new Graphics();
-        signalLayerRef.current?.addChild(bar);
-        signalGraphicsRef.current[direction] = bar;
+      let group = signalGraphicsRef.current[direction];
+      if (!group) {
+        group = new Graphics();
+        signalLayerRef.current?.addChild(group);
+        signalGraphicsRef.current[direction] = group;
       }
 
-      const stop = toSceneSpace(bounds, pos.stop);
-      // toSceneSpace flips Y, so the direction vector's Y component flips
-      // sign going from map space to scene space — recompute the on-screen
-      // heading rather than reusing the map-space vector directly.
-      const [dx, dyMap] = pos.direction;
-      const dy = -dyMap;
-      const heading = Math.atan2(dy, dx);
-
-      // Move backward along the approach (away from the junction, the
-      // opposite of `direction`, which points into it) by `setback`.
-      bar.position.set(stop[0] - dx * setback, stop[1] - dy * setback);
-      // The bar is drawn along its local X axis and rotated 90° from the
-      // lane's own heading so it lies across the lane, at the stop line —
-      // exactly how SUMO-GUI marks a controlled connection.
-      bar.rotation = heading + Math.PI / 2;
-
+      // `pos.direction` points into the junction; outward is its reverse,
+      // and it's what actually places the tick block (the true `pos.stop`
+      // is only used for orientation via `pos.direction` here).
+      const outward: [number, number] = [-pos.direction[0], -pos.direction[1]];
+      const perp = mapPerp(pos.direction);
       const state = signalStateFor(direction, trafficState?.activePhase);
-      bar.clear();
-      bar
-        .rect(-barLength / 2, -barThickness / 2, barLength, barThickness)
-        .fill(SIGNAL_COLOR[state]);
+      group.clear();
+
+      for (let lane = 0; lane < LANES_PER_DIRECTION; lane++) {
+        const laneOffset = (lane + 0.5) * laneWidth;
+        const centerMap: [number, number] = [
+          center.x + outward[0] * tickCenterDistance + perp[0] * laneOffset,
+          center.y + outward[1] * tickCenterDistance + perp[1] * laneOffset,
+        ];
+        const corners = orientedRectCorners(
+          centerMap,
+          pos.direction,
+          perp,
+          tick.length,
+          tick.thickness,
+        ).map(([x, y]) => toSceneSpace(bounds, [x, y]));
+        group.poly(corners.flat()).fill(SIGNAL_COLOR[state]);
+      }
     }
   }, [trafficState?.activePhase]);
 
