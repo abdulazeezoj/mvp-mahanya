@@ -1,15 +1,14 @@
-import { EB_Garamond, Geist_Mono } from "next/font/google";
+import { Geist_Mono, Space_Grotesk } from "next/font/google";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { cn } from "@/lib/utils";
 import "./tailwind.css";
 
-const fontHeading = EB_Garamond({
+const fontHeading = Space_Grotesk({
   subsets: ["latin"],
   variable: "--font-heading",
   weight: "variable",
-  style: ["normal", "italic"],
 });
 
 const fontMono = Geist_Mono({
