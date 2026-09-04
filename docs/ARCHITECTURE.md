@@ -58,7 +58,7 @@ flowchart LR
 A traffic operator monitors live junction state, the scheduler's decision log,
 and evaluation results through the dashboard, while an emergency vehicle
 detected by the simulation triggers pre-emption directly, short-circuiting the
-model's own recommendation path. Both actor-triggered flows converge on a
+model's own automatic phase-recommendation path. Both paths converge on a
 single use case, "Validate & apply signal decision," which is the scheduler's
 rule engine and the only path by which any signal state is ever actually
 applied.
