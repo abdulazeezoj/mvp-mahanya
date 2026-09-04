@@ -1,0 +1,20 @@
+flowchart LR
+    Operator["Traffic Operator"]
+    Emergency["Emergency Vehicle"]
+
+    subgraph MaHanya
+        direction TB
+        Monitor(["Monitor live junction state"])
+        Log(["View decision log (reason codes)"])
+        Eval(["Run evaluation vs. fixed-time baseline"])
+        Recommend(["Recommend signal phase (model)"])
+        Validate(["Validate & apply signal decision (scheduler)"])
+        Preempt(["Receive priority pre-emption"])
+    end
+
+    Operator --> Monitor
+    Operator --> Log
+    Operator --> Eval
+    Emergency --> Preempt
+    Recommend -. include .-> Validate
+    Preempt -. "extend (short-circuits the model)" .-> Validate
