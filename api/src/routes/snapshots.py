@@ -1,4 +1,4 @@
-"""GET /api/snapshots/* — current-state, decision-log, and evaluation queries."""
+"""GET /api/snapshots/*: current-state, decision-log, and evaluation queries."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from mahanya.sumo.traci_client import TraciClient
 
 router = APIRouter(prefix="/snapshots", tags=["snapshots"])
 
-#: Ticks to run for an on-demand evaluation comparison — short enough to
+#: Ticks to run for an on-demand evaluation comparison: short enough to
 #: answer within one HTTP request, long enough to be a meaningful sample.
 EVALUATION_TICKS = 600
 
@@ -58,7 +58,7 @@ def get_evaluation(
     model: ModelRecommender | None = Depends(get_model),
 ) -> list[EvaluationMetrics]:
     """Run a short head-to-head: intelligent controller vs. fixed-time
-    baseline, on identical scenario conditions (same seed). Synchronous —
+    baseline, on identical scenario conditions (same seed). Synchronous:
     FastAPI runs non-async routes in a threadpool, so this doesn't block
     other requests, but it does take a few seconds.
     """

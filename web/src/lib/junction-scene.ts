@@ -85,14 +85,14 @@ export function toSceneSpace(
 }
 
 export interface SignalPosition {
-  /** The lane's stop line — where the inbound lane meets the junction. SUMO map space. */
+  /** The lane's stop line, where the inbound lane meets the junction. SUMO map space. */
   stop: [number, number];
   /** Unit vector along the lane's travel direction (into the junction), SUMO map space. */
   direction: [number, number];
 }
 
 /**
- * Each approach's stop line and travel direction, in SUMO map space —
+ * Each approach's stop line and travel direction, in SUMO map space:
  * everything needed to draw a signal indicator bar directly across the
  * lane at the stop line, the way SUMO-GUI itself renders a traffic light
  * state (a short colored bar at the connection, not a free-standing
@@ -133,7 +133,7 @@ export interface CrosswalkAnchor {
 
 /**
  * A zebra-crossing anchor per approach, `distance` map-space units out from
- * the junction center along that arm — the same "distance from center"
+ * the junction center along that arm, the same "distance from center"
  * convention `directionLabelAnchors` already uses, deliberately *not*
  * relative to the real inbound lane's own (tiny, close-to-center) stop
  * line: the drawn carriageway and pavement plaza are a cosmetic widening
@@ -179,7 +179,7 @@ function rotate90(v: [number, number], ccw: boolean): [number, number] {
   return ccw ? [-y, x] : [y, -x];
 }
 
-/** Of the two perpendiculars of each vector, pick whichever pair points most nearly the same way — i.e. the shared edge between two adjacent arms. */
+/** Of the two perpendiculars of each vector, pick whichever pair points most nearly the same way, i.e. the shared edge between two adjacent arms. */
 function facingPerpendiculars(
   outwardA: [number, number],
   outwardB: [number, number],
@@ -209,7 +209,7 @@ function facingPerpendiculars(
 /**
  * The paved-area outline at the junction mouth: a "plus" shape following
  * where each arm's road actually meets its neighbors, with its concave
- * corners rounded — instead of a plain circle, which either leaves the
+ * corners rounded, instead of a plain circle, which either leaves the
  * road ribbons' square corners exposed or balloons into a roundabout-like
  * blob unrelated to the real road edges. SUMO map space; pass through
  * `roundShape`-style rendering with each point's own `radius`.
@@ -217,7 +217,7 @@ function facingPerpendiculars(
  * Returns one 3-point run per approach direction (outer corner shared
  * with the previous arm, outer corner shared with the next arm, the
  * rounded concave notch between this arm and the next), in a consistent
- * winding order — empty if fewer than two directions have an inbound
+ * winding order; empty if fewer than two directions have an inbound
  * lane, since a "junction" needs at least two roads meeting.
  */
 export function junctionPavementOutline(
@@ -330,8 +330,8 @@ function polygon(points: [number, number][]): [number, number][] {
 }
 
 /**
- * All vehicle shapes are plain axis-aligned rectangles — matching how SUMO
- * itself renders vehicles from directly overhead — sized differently per
+ * All vehicle shapes are plain axis-aligned rectangles, matching how SUMO
+ * itself renders vehicles from directly overhead, sized differently per
  * type so they stay visually distinguishable without needing an outline
  * silhouette (a rounded "nose" reads as a video-game car, not a simulator
  * replay).
@@ -386,7 +386,7 @@ export const DIRECTION_SHORT_LABEL: Record<ApproachDirection, string> = {
   west: "W",
 };
 
-/** Outward (away-from-center) unit vector for the given direction's inbound lane, SUMO map space — undefined if that approach has no inbound lane. */
+/** Outward (away-from-center) unit vector for the given direction's inbound lane, SUMO map space; undefined if that approach has no inbound lane. */
 function armOutward(
   geometry: NetworkGeometry,
   direction: ApproachDirection,
@@ -406,7 +406,7 @@ function armOutward(
 
 /**
  * A label anchor per approach direction, set back from the junction center
- * along that arm and offset sideways off the road into the grass — for
+ * along that arm and offset sideways off the road into the grass, for
  * "North"/"South"/... captions that sit beside the carriageway instead of
  * printed on top of the lane markings. SUMO map space. `lateralOffset`
  * defaults to 0 (directly on the centerline) for callers that don't need
@@ -436,7 +436,7 @@ export function directionLabelAnchors(
 }
 
 /**
- * How congested a single approach reads, 0 (free-flowing) to 1 (saturated) —
+ * How congested a single approach reads, 0 (free-flowing) to 1 (saturated):
  * driven primarily by queue length, falling back to a damped vehicle count
  * when nothing is formally queued yet. Purely a rendering heuristic (lane
  * tint), not a scheduler input.
@@ -454,9 +454,9 @@ export function congestionLevel(
 }
 
 const CONGESTION_STOPS: [number, [number, number, number]][] = [
-  [0, [34, 197, 94]], // free-flowing — green-500
-  [0.5, [234, 179, 8]], // building — amber-500
-  [1, [239, 68, 68]], // saturated — red-500
+  [0, [34, 197, 94]], // free-flowing: green-500
+  [0.5, [234, 179, 8]], // building: amber-500
+  [1, [239, 68, 68]], // saturated: red-500
 ];
 
 /** Green -> amber -> red blend for a 0..1 congestion level, as 0xRRGGBB. */

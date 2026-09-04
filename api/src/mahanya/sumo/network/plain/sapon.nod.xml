@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Sapon Under-bridge Junction, Abeokuta — simplified 4-leg node layout.
+  Sapon Under-bridge Junction, Abeokuta: simplified 4-leg node layout.
 
   Authored as plain SUMO XML (nodes/edges/connections) rather than in
   NetEdit's GUI, since NetEdit is unavailable headless in this environment;

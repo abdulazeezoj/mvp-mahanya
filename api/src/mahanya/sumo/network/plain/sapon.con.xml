@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
-  Straight-through movements only (no protected-turn phases) — the
+  Straight-through movements only (no protected-turn phases): the
   documented default assumption in docs/ARCHITECTURE.md's "Data contracts"
   section, pending confirmation against the surveyed junction geometry.
 -->

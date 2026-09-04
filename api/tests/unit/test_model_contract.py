@@ -1,6 +1,6 @@
 """Contract/shape tests for `model`: verify input/output shapes and that
 inference never raises on well-formed input. Explicitly not accuracy
-assertions — accuracy is an evaluation concern, not a unit-test concern
+assertions; accuracy is an evaluation concern, not a unit-test concern
 (see ARCHITECTURE.md's testing strategy).
 """
 
@@ -74,7 +74,7 @@ def test_model_recommender_left_pads_short_history(model_config, tmp_path):
     torch.save({"model_state_dict": model.state_dict()}, checkpoint_path)
 
     recommender = ModelRecommender.load(checkpoint_path, model_config)
-    # Fewer states than sequence_length — must not raise.
+    # Fewer states than sequence_length: must not raise.
     short_history = [make_traffic_state(tick=0)]
     recommendation = recommender.predict(short_history)
     assert recommendation.recommended_phase in GREEN_PHASES

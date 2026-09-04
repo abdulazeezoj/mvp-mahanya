@@ -18,7 +18,7 @@
 
 - **Paper Size:** A4 (21.0 cm × 29.7 cm)
 - **Print:** One side of the paper only
-- **Length:** 30–50 pages *(excluding preliminary pages and appendices)*
+- **Length:** 30-50 pages *(excluding preliminary pages and appendices)*
 
 ---
 

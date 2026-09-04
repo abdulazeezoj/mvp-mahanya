@@ -38,7 +38,7 @@ import type { SchedulerDecision } from "@/lib/types";
  * expected case (outline). `min_green_hold`/`max_green_force` are routine
  * mechanical holds enforcing timing constraints (secondary).
  * `anti_starvation_force` is a notable override worth noticing (primary).
- * `emergency_preempt` is the most safety-critical override in the system —
+ * `emergency_preempt` is the most safety-critical override in the system;
  * it must be unmistakable in a scrolling log (destructive).
  */
 const REASON_VARIANT: Record<
@@ -73,7 +73,7 @@ const columns: ColumnDef<SchedulerDecision>[] = [
   },
   {
     id: "recommendedPhase",
-    accessorFn: (row) => row.recommendation?.recommendedPhase ?? "—",
+    accessorFn: (row) => row.recommendation?.recommendedPhase ?? "-",
     header: "Model Recommendation",
   },
   {

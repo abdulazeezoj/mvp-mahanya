@@ -39,12 +39,12 @@ export function DecisionComparisonCard({
             Model vs. Scheduler
           </CardTitle>
           <CardDescription>
-            The model's recommendation is advisory only — the scheduler is the
+            The model's recommendation is advisory only: the scheduler is the
             sole authority over what's applied.
           </CardDescription>
         </CardHeader>
         <CardContent className="text-xs text-muted-foreground">
-          No decision recorded yet — select and run a scenario above.
+          No decision recorded yet. Select and run a scenario above.
         </CardContent>
       </Card>
     );
@@ -57,8 +57,8 @@ export function DecisionComparisonCard({
           Model vs. Scheduler
         </CardTitle>
         <CardDescription>
-          The model's recommendation is advisory only — the scheduler is the
-          sole authority over what's applied.
+          The model's recommendation is advisory only: the scheduler is the sole
+          authority over what's applied.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">

@@ -1,7 +1,7 @@
 """FastAPI app factory: constructs the app and includes routers under /api.
 
 An internal process boundary between simulation/control and the Next.js
-dashboard — not a public third-party API surface (see
+dashboard, not a public third-party API surface (see
 ARCHITECTURE.md#internal-api-and-dashboard).
 """
 

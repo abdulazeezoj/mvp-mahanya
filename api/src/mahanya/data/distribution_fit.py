@@ -2,7 +2,7 @@
 
 Poisson is the default first choice for independent, low-to-moderate-volume
 arrivals; when the observed counts are overdispersed (variance well above
-the mean — a common real-world departure from Poisson caused by clustered
+the mean, a common real-world departure from Poisson caused by clustered
 arrivals), a negative binomial is fit instead. Each fit carries a
 chi-square goodness-of-fit stat/p-value so the choice is auditable, not
 just asserted.
@@ -37,7 +37,7 @@ class FitResult(BaseModel):
     chi_square_pvalue: float
     n_observations: int
     #: Mean arrivals per the raw counts' collection interval (5 minutes in
-    #: the field-count CSV) — see `sumo.calibrate.mean_arrivals_per_hour`
+    #: the field-count CSV); see `sumo.calibrate.mean_arrivals_per_hour`
     #: for the hourly conversion used to calibrate SUMO flows.
     mean_arrivals: float
 

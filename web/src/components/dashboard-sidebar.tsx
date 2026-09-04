@@ -80,7 +80,7 @@ export function SidebarFooter() {
             Sapon Under-bridge Junction
           </CardTitle>
           <CardDescription>
-            Abeokuta, Ogun State — the real junction this simulation is
+            Abeokuta, Ogun State: the real junction this simulation is
             calibrated against.
           </CardDescription>
         </CardHeader>

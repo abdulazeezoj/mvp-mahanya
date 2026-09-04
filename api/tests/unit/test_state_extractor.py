@@ -1,4 +1,4 @@
-"""`state_extractor.extract_traffic_state` against a fake TraCI connection —
+"""`state_extractor.extract_traffic_state` against a fake TraCI connection:
 the whole point of the `TraciConnectionLike` Protocol split from
 `TraciClient` is that this needs no running SUMO process.
 """

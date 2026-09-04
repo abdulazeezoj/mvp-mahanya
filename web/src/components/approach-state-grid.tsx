@@ -36,7 +36,7 @@ export function ApproachStateGrid({
       <CardContent>
         {!trafficState ? (
           <p className="text-xs text-muted-foreground">
-            No live state yet — select and run a scenario above.
+            No live state yet. Select and run a scenario above.
           </p>
         ) : (
           <div className="grid grid-cols-2 gap-3">

@@ -21,7 +21,7 @@ GREEN_INDEX: dict[str, int] = {phase: i for i, phase in enumerate(GREEN_PHASES)}
 
 class SequenceDataset(Dataset[tuple[torch.Tensor, torch.Tensor]]):
     """Sliding windows of engineered features, labelled with the next
-    applied green phase — skipping windows that end mid-transition, since
+    applied green phase, skipping windows that end mid-transition, since
     yellow/all-red states are deterministic, not something to predict."""
 
     def __init__(self, df: pd.DataFrame, sequence_length: int) -> None:

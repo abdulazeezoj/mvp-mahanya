@@ -1,4 +1,4 @@
-"""GET /api/scenarios — scenario discovery and static network geometry."""
+"""GET /api/scenarios: scenario discovery and static network geometry."""
 
 from __future__ import annotations
 

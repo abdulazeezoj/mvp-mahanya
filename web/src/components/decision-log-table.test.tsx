@@ -23,7 +23,7 @@ describe("DecisionLogTable", () => {
       makeDecision({ recommendation: null, reasonCode: "emergency_preempt" }),
     ];
     render(<DecisionLogTable decisions={decisions} />);
-    expect(screen.getByText("—")).toBeInTheDocument();
+    expect(screen.getByText("-")).toBeInTheDocument();
   });
 
   it("filters by reason code", async () => {

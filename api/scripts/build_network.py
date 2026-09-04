@@ -31,7 +31,7 @@ DIRECTION_BY_IN_EDGE = {
     "west_in": "WEST",
 }
 
-#: (state-suffix, duration seconds) — duration is only the *default*
+#: (state-suffix, duration seconds); duration is only the *default*
 #: standalone-SUMO program; TraCI overrides state live every control tick.
 PHASE_DURATIONS = {
     "GREEN": 30,

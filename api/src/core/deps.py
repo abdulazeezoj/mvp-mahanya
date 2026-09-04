@@ -1,6 +1,6 @@
 """Shared settings/dependency-injection callables used by `routes`.
 
-`routes` depends on this module only — never on `core.app`, since
+`routes` depends on this module only, never on `core.app`, since
 `core.app` is what imports and includes `routes`; the reverse dependency
 would be a circular import at startup.
 """

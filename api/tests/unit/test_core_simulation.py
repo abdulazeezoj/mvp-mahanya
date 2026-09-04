@@ -1,6 +1,6 @@
 """`core.simulation.ScenarioSession`'s threaded run/pause/step/reset
 lifecycle, against a fake TraCI client (monkeypatched in) so this needs no
-real SUMO process — only the session's own thread-safety and state-machine
+real SUMO process; only the session's own thread-safety and state-machine
 logic is under test here.
 """
 

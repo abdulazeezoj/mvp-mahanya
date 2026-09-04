@@ -47,7 +47,7 @@ export function JunctionSummaryCards({
         <CardHeader className="gap-1">
           <CardDescription>Total Queued</CardDescription>
           <CardTitle className="text-lg font-semibold tabular-nums">
-            {trafficState ? totalQueued : "—"}
+            {trafficState ? totalQueued : "-"}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
@@ -64,7 +64,7 @@ export function JunctionSummaryCards({
         <CardHeader className="gap-1">
           <CardDescription>Active Phase</CardDescription>
           <CardTitle className="truncate text-lg font-semibold">
-            {trafficState?.activePhase ?? "—"}
+            {trafficState?.activePhase ?? "-"}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">
@@ -98,7 +98,7 @@ export function JunctionSummaryCards({
         <CardHeader className="gap-1">
           <CardDescription>Reason Code</CardDescription>
           <CardTitle className="truncate text-lg font-semibold">
-            {decision ? REASON_LABELS[decision.reasonCode] : "—"}
+            {decision ? REASON_LABELS[decision.reasonCode] : "-"}
           </CardTitle>
           <CardAction>
             <Badge variant="outline">

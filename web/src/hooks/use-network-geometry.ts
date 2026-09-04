@@ -6,7 +6,7 @@ import type { NetworkGeometry } from "@/lib/types";
 
 /**
  * The road layout never changes for a scenario's lifetime, so this fetches
- * once per scenario id and caches the result across remounts/switches —
+ * once per scenario id and caches the result across remounts/switches;
  * no polling needed, unlike the per-tick traffic state.
  */
 export function useNetworkGeometry(

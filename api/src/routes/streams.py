@@ -1,4 +1,4 @@
-"""WebSocket relay: /api/streams/{scenario_id} — live simulation ticks.
+"""WebSocket relay: /api/streams/{scenario_id}, live simulation ticks.
 
 Read-only telemetry, so a simple poll-and-push loop against the session's
 thread-safe latest snapshot is sufficient; no bidirectional control flows

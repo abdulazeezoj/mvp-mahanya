@@ -1,7 +1,7 @@
 """Deterministic scheduler rules: min/max green, transitions, anti-starvation,
 emergency pre-emption.
 
-These are pure functions over an explicit :class:`ControllerState` — no I/O,
+These are pure functions over an explicit :class:`ControllerState`: no I/O,
 no SUMO, no model. This is the safety-critical layer: every decision that
 overrides or holds the model's recommendation is returned with an explicit
 :data:`~mahanya.schemas.ReasonCode`, and hard safety constraints (minimum

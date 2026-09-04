@@ -1,7 +1,7 @@
 """One control-loop tick: observe -> predict -> validate -> apply -> log.
 
 ``Controller`` is the only place that is allowed to reach into both a SUMO
-client and a model — everything downstream of it only ever sees the
+client and a model; everything downstream of it only ever sees the
 deterministic :class:`~mahanya.schemas.SchedulerDecision` output. Both
 collaborators are consumed through structural (``Protocol``) interfaces so
 this module, and its tests, never need a real TraCI connection or a loaded

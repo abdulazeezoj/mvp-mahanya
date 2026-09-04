@@ -47,7 +47,7 @@ ALL_PHASES: tuple[Phase, ...] = (
 )
 
 #: The phases the model may recommend and the scheduler may target as a
-#: "next green" — yellow/all-red are deterministic transition states the
+#: "next green"; yellow/all-red are deterministic transition states the
 #: scheduler inserts itself, never a model or scheduler *target*.
 GREEN_PHASES: tuple[Phase, ...] = (
     "NORTH_GREEN",
@@ -142,7 +142,7 @@ class SchedulerDecision(CamelModel):
     """The scheduler's final, applied decision for one control-loop tick.
 
     ``recommendation`` is ``None`` when the model wasn't consulted this
-    tick — either an emergency pre-emption short-circuit, or a model
+    tick: either an emergency pre-emption short-circuit, or a model
     inference failure the scheduler safely fell back around.
     """
 

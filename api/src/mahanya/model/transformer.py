@@ -1,6 +1,6 @@
 """A lightweight `nn.TransformerEncoder` phase recommender.
 
-Small by design — the synopsis specifically calls for a "lightweight"
+Small by design: the synopsis specifically calls for a "lightweight"
 encoder, not a large sequence model: a handful of layers/heads over an
 engineered per-timestep feature vector (see `features.py`), following the
 pattern in Zhao et al. (2024) (cited in ARCHITECTURE.md).

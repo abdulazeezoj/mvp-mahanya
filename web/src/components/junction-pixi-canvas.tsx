@@ -36,7 +36,7 @@ import type {
 // top-down rendering: green grass, dark asphalt, white lane paint, a short
 // colored bar at each stop line for signal state, and flat yellow vehicle
 // rectangles. None of that has a dark/light mode in the real tool, so none
-// of it is resolved from the app's theme tokens here — these are fixed
+// of it is resolved from the app's theme tokens here; these are fixed
 // "real-world material" colors, same as a satellite photo doesn't change
 // color when you toggle your OS theme.
 const GRASS = 0x2f6b34;
@@ -59,17 +59,17 @@ const TWEEN_MS = 900;
 const EMERGENCY_BEACON_PERIOD_MS = 600;
 
 // Typical single-approach green window used only to give the phase-elapsed
-// indicator something to fill toward — a visual reference, not a scheduler
+// indicator something to fill toward, a visual reference, not a scheduler
 // bound (the scheduler's actual min/max green thresholds aren't part of
 // TrafficState and shouldn't be guessed at here).
 const PHASE_PROGRESS_REFERENCE_SEC = 30;
 
 // Uniform shrink applied on top of the fit-to-canvas scale so the pavement
-// never runs flush to the frame edge — leaves a grass margin on every side.
+// never runs flush to the frame edge; leaves a grass margin on every side.
 const FRAME_MARGIN = 0.9;
 
 // The calibrated Sapon network models exactly one lane each way per
-// approach — that's the real, simulated geometry, and vehicle positions
+// approach; that's the real, simulated geometry, and vehicle positions
 // always come from that single lane. LANES_PER_DIRECTION is a purely
 // cosmetic widening of the drawn carriageway into a multi-lane road (the
 // look of the reference SUMO-GUI capture this was redesigned to match),
@@ -80,8 +80,8 @@ const LANES_PER_DIRECTION = 3;
 // How far the cosmetic pavement plaza reaches past each arm's shared
 // corner notch, as a multiple of one direction's lane block width. Kept
 // deliberately small (rather than the ~1.5x a literal SUMO junction mouth
-// would suggest) because every other near-junction feature — signal
-// ticks, lane arrows, the crosswalk — is anchored past this reach and
+// would suggest) because every other near-junction feature (signal
+// ticks, lane arrows, the crosswalk) is anchored past this reach and
 // stacks on top of it; a wide plaza just for its own sake eats into the
 // only real budget available for open, "car is actually driving here"
 // road, since the network's real per-arm length is fixed by the
@@ -89,7 +89,7 @@ const LANES_PER_DIRECTION = 3;
 const ARM_REACH_RATIO = 0.85;
 
 // Gap between the lane arrows and the crosswalk, as a multiple of one
-// lane's own width — see ARM_REACH_RATIO for why this is kept tight
+// lane's own width; see ARM_REACH_RATIO for why this is kept tight
 // rather than generous.
 const CROSSWALK_GAP_RATIO = 0.3;
 
@@ -110,7 +110,7 @@ function roadWidthFor(bounds: NetworkGeometry["bounds"]): number {
  * draws it) and `drawSignals` (which needs to know where its outer edge
  * is): the real network's inbound lanes connect only a few units from the
  * junction center, but the widened, multi-lane carriageway this canvas
- * draws is anchored on `armReach` out from the center instead — so
+ * draws is anchored on `armReach` out from the center instead, so
  * anything meant to sit "just past the plaza" (signal ticks, the
  * crosswalk) has to measure from the center + `armReach`, not from the
  * real, close-in stop line.
@@ -128,7 +128,7 @@ function pavementGeometryFor(bounds: NetworkGeometry["bounds"]) {
  * The per-lane signal tick's own size, shared between `drawSignals` (which
  * draws the ticks) and `drawStatic` (which draws the lane arrows and
  * crosswalk right after them) so those line up exactly where the ticks
- * end. Each tick is laid crosswise over its own single lane — `span` is
+ * end. Each tick is laid crosswise over its own single lane: `span` is
  * how far it reaches across the lane (perpendicular to travel) and
  * `thickness` is how deep it is along the lane (parallel to travel, kept
  * small so it reads as a stop-line mark, not a speed bump).
@@ -142,7 +142,7 @@ function signalTickGeometryFor(laneWidth: number) {
 }
 
 /**
- * A lane-direction arrow's size — the shaft+head painted on each lane
+ * A lane-direction arrow's size: the shaft+head painted on each lane
  * between its signal tick and the crosswalk, showing which way that lane
  * travels (this network has no per-lane turn restrictions, so every lane
  * gets a straight-ahead arrow).
@@ -158,7 +158,7 @@ function laneArrowGeometryFor(laneWidth: number) {
 /**
  * A straight-ahead lane arrow (shaft + triangular head) centered at
  * `center`, pointing along unit vector `dir`, `length` long and `width`
- * wide at the head — in the same space as `center` (map space; caller
+ * wide at the head, in the same space as `center` (map space; caller
  * converts through `toSceneSpace` before filling).
  */
 function laneArrowPolygons(
@@ -248,12 +248,12 @@ const ZOOM_BUTTON_STEP = 1.5;
 
 /**
  * How far the view center may pan from the scene's own center at a given
- * zoom level, per axis — derived so the visible viewport (`sceneSize /
+ * zoom level, per axis: derived so the visible viewport (`sceneSize /
  * zoom` wide) can never leave the scene entirely: half that viewport is
  * `sceneSize / (2 * zoom)`, so the center can move at most `sceneSize / 2
  * - sceneSize / (2 * zoom)` before the far edge of the scene would show
  * through. At zoom 1 (the whole scene already visible) this is exactly
- * 0 — panning does nothing until a viewer has actually zoomed in.
+ * 0; panning does nothing until a viewer has actually zoomed in.
  */
 function clampPan(
   pan: { x: number; y: number },
@@ -299,7 +299,7 @@ function drawOffsetSolidLine(
     .stroke({ width, color, alpha });
 }
 
-/** A dashed line offset perpendicular from a straight segment by `offset` — a lane-boundary marking. */
+/** A dashed line offset perpendicular from a straight segment by `offset`: a lane-boundary marking. */
 function drawOffsetDashedLine(
   g: Graphics,
   x1: number,
@@ -338,14 +338,14 @@ function drawOffsetDashedLine(
  * way on screen as the interior lane-divider offsets in `drawStatic`
  * (which compute their own perpendicular from already-Y-flipped scene
  * points). Working entirely in map space and converting whole points
- * through `toSceneSpace` — rather than flipping vectors by hand — avoids
+ * through `toSceneSpace` (rather than flipping vectors by hand) avoids
  * re-deriving that sign flip at every call site.
  */
 function mapPerp(dir: [number, number]): [number, number] {
   return [dir[1], -dir[0]];
 }
 
-/** Corners of a rectangle centered at `center`, `length` long along unit vector `dir` and `thickness` wide along unit vector `perp` — same space as `center` (map or scene, caller's choice, as long as `dir`/`perp` match). */
+/** Corners of a rectangle centered at `center`, `length` long along unit vector `dir` and `thickness` wide along unit vector `perp`: same space as `center` (map or scene, caller's choice, as long as `dir`/`perp` match). */
 function orientedRectCorners(
   center: [number, number],
   dir: [number, number],
@@ -369,9 +369,9 @@ function orientedRectCorners(
 /**
  * Strokes only the long sides of a ribbon polygon (as returned by
  * `offsetRibbon`), skipping its two end caps. Stroking the *whole* ribbon
- * outline drew a crisp dark line across the end cap nearest the junction —
- * exactly where that ribbon overlaps the central plaza fill, which has no
- * stroke of its own — reading as a visible seam between each arm and the
+ * outline drew a crisp dark line across the end cap nearest the junction
+ * (exactly where that ribbon overlaps the central plaza fill, which has no
+ * stroke of its own), reading as a visible seam between each arm and the
  * plaza instead of one continuous paved surface.
  */
 function strokeRibbonSides(
@@ -432,7 +432,7 @@ export function JunctionPixiCanvas({
   // Mirrors `trafficState` the same way `geometryRef` mirrors `geometry`:
   // the mount effect's app.init().then() continuation (below) is created
   // once, at mount, so any value it reads by closing over a render's props
-  // directly is frozen to whatever that render saw — if the traffic-state
+  // directly is frozen to whatever that render saw; if the traffic-state
   // WebSocket delivers its first message after mount but before Pixi
   // finishes initializing, a closure-captured `trafficState` would still
   // be null when that continuation runs. Reading through this ref instead
@@ -468,7 +468,7 @@ export function JunctionPixiCanvas({
     // The road ribbons below are drawn `roadWidth * 2` wide (one
     // direction's lane block on each side of the centerline), so the
     // pavement outline's own half-width must be sized off that same full
-    // carriageway width — not the one-direction `roadWidth` — or the plaza
+    // carriageway width (not the one-direction `roadWidth`) or the plaza
     // ends up half as wide as the ribbons it's meant to cover, leaving
     // their corners poking out past it.
     const pavement = junctionPavementOutline(
@@ -491,9 +491,9 @@ export function JunctionPixiCanvas({
     // `armReach`), then each lane's signal tick (drawn in `drawSignals`),
     // then a straight-ahead direction arrow on each lane, then the zebra
     // crossing, then the regular dashed lane markings and approaching
-    // traffic — the same stop-line layout real SUMO-GUI renders. All of it
+    // traffic: the same stop-line layout real SUMO-GUI renders. All of it
     // anchored `armReach` + gaps out from the junction *center*, not the
-    // real (much closer-in) SUMO stop line — see `pavementGeometryFor`.
+    // real (much closer-in) SUMO stop line; see `pavementGeometryFor`.
     const tick = signalTickGeometryFor(laneWidth);
     const arrow = laneArrowGeometryFor(laneWidth);
     const tickOuterEdge = armReach + tick.gap + tick.thickness;
@@ -508,7 +508,7 @@ export function JunctionPixiCanvas({
     for (const direction of DIRECTIONS) {
       // Both directions of travel share one drawn carriageway, built from
       // the inbound lane's own centerline (the two real centerlines are
-      // only a couple of units apart — close enough to treat as one road
+      // only a couple of units apart, close enough to treat as one road
       // for rendering purposes).
       const inLane = geo.lanes.find(
         (lane) => lane.direction === direction && lane.kind === "in",
@@ -519,7 +519,7 @@ export function JunctionPixiCanvas({
       if (ribbon.length > 0) {
         scene.poly(ribbon.flat()).fill(ASPHALT);
         // A crisp dark edge line where the asphalt meets the grass, the
-        // way SUMO-GUI outlines every lane — only along the ribbon's two
+        // way SUMO-GUI outlines every lane: only along the ribbon's two
         // long sides, not its end caps. The end cap nearest the junction
         // sits on top of the (unstroked) plaza fill; stroking it too drew
         // a seam right across the plaza instead of one continuous surface.
@@ -528,7 +528,7 @@ export function JunctionPixiCanvas({
 
       // Travel direction (into the junction) and its outward reverse, plus
       // how far the real lane's own outer endpoint sits from the junction
-      // center — everything below is parameterized as `center + outward *
+      // center: everything below is parameterized as `center + outward *
       // distance` so the lane arrows/crosswalk/tick geometry all line up
       // exactly, and so the lane dividers can be skipped across the
       // crosswalk's own span instead of running straight through it.
@@ -552,7 +552,7 @@ export function JunctionPixiCanvas({
         ]);
 
       // Lane dividers only across the two stretches of road that aren't
-      // the crosswalk — from the plaza edge out to just before the
+      // the crosswalk: from the plaza edge out to just before the
       // crossing, then from just past it out to where the real lane data
       // ends. Drawing them the full length (as the crosswalk stripes were
       // then painted over) left the dashes and centerline showing through
@@ -584,7 +584,7 @@ export function JunctionPixiCanvas({
         );
 
         // Dashed boundaries between the LANES_PER_DIRECTION lanes within
-        // each direction's own half of the carriageway — purely cosmetic
+        // each direction's own half of the carriageway, purely cosmetic
         // (see LANES_PER_DIRECTION), not derived from separate simulated
         // lanes.
         for (let lane = 1; lane < LANES_PER_DIRECTION; lane++) {
@@ -619,7 +619,7 @@ export function JunctionPixiCanvas({
       }
 
       // One straight-ahead direction arrow per lane, right after that
-      // lane's signal tick — this network has no per-lane turn
+      // lane's signal tick; this network has no per-lane turn
       // restrictions, so every lane gets the same forward arrow.
       for (let lane = 0; lane < LANES_PER_DIRECTION; lane++) {
         const laneOffset = (lane + 0.5) * laneWidth;
@@ -650,7 +650,7 @@ export function JunctionPixiCanvas({
     // Zebra pedestrian crossings, one per approach. A real crosswalk's
     // stripes each run ALONG the direction of travel (the way pedestrians
     // walking across the road cut perpendicular to them) and are repeated
-    // side by side ACROSS the road's width — not the other way around.
+    // side by side ACROSS the road's width, not the other way around.
     const crosswalks = crosswalkAnchors(geo, crosswalkDistance);
     const crosswalkSpan = roadWidth * 2 * 0.94;
     const stripeCount = 9;
@@ -719,7 +719,7 @@ export function JunctionPixiCanvas({
     }
   }, []);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: activePhase drives this callback's *identity* (so the reactive effect below re-fires on change), even though the body reads the current value through trafficStateRef rather than this closure — see trafficStateRef's own comment.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: activePhase drives this callback's *identity* (so the reactive effect below re-fires on change), even though the body reads the current value through trafficStateRef rather than this closure; see trafficStateRef's own comment.
   const drawSignals = React.useCallback(() => {
     const app = appRef.current;
     if (!app) return;
@@ -730,14 +730,14 @@ export function JunctionPixiCanvas({
     const center = junctionCenter(geo);
     const positions = signalPositions(geo);
     // One short tick per simulated lane, laid crosswise over just that
-    // lane — not a single bar spanning the whole direction's lane block,
+    // lane, not a single bar spanning the whole direction's lane block,
     // and not running lengthwise with the lane either: a real stop-line
     // signal mark reads as a small gate across the lane it controls, the
     // same way the lane divider and crosswalk stripes it sits between are
     // both lengthwise with the road, and the light has to contrast with
     // both. Positioned `armReach` + a small gap out from the junction
-    // *center* — the edge of the cosmetic pavement plaza, not the real
-    // (much closer-in) SUMO stop line `pos.stop` — so the ticks sit just
+    // *center*: the edge of the cosmetic pavement plaza, not the real
+    // (much closer-in) SUMO stop line `pos.stop`, so the ticks sit just
     // past the plaza instead of buried inside it. Kept in sync with the
     // lane-arrow and crosswalk geometry in `drawStatic`, which both start
     // right where these ticks end.
@@ -772,7 +772,7 @@ export function JunctionPixiCanvas({
           center.y + outward[1] * tickCenterDistance + perp[1] * laneOffset,
         ];
         // `span` (across the lane) runs along `perp`, `thickness` (along
-        // the lane) runs along `pos.direction` — the reverse pairing of
+        // the lane) runs along `pos.direction`: the reverse pairing of
         // the lane arrows and crosswalk stripes just past this tick.
         const corners = orientedRectCorners(
           centerMap,
@@ -786,7 +786,7 @@ export function JunctionPixiCanvas({
     }
   }, [trafficState?.activePhase]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: trafficState drives this callback's *identity* (so the reactive effect below re-fires on change), even though the body reads the current value through trafficStateRef rather than this closure — see trafficStateRef's own comment.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: trafficState drives this callback's *identity* (so the reactive effect below re-fires on change), even though the body reads the current value through trafficStateRef rather than this closure; see trafficStateRef's own comment.
   const drawCongestion = React.useCallback(() => {
     const layer = congestionLayerRef.current;
     if (!layer) return;
@@ -797,7 +797,7 @@ export function JunctionPixiCanvas({
     const center = junctionCenter(geo);
 
     // Mirror drawStatic's tick → arrow → crosswalk distance chain so the
-    // tint's near edge lines up exactly with where the crosswalk ends —
+    // tint's near edge lines up exactly with where the crosswalk ends;
     // the tint represents queued traffic on the open road, and must never
     // wash over the plaza, signal ticks, lane arrows, or crosswalk
     // stripes those fixed markings need to stay crisp and legible.
@@ -838,10 +838,10 @@ export function JunctionPixiCanvas({
       );
       if (outerDist <= crosswalkFarDistance) continue;
 
-      // A short centerline offset `roadWidth / 2` along `perpVec` — the
+      // A short centerline offset `roadWidth / 2` along `perpVec`: the
       // same lateral convention drawStatic's lane arrows use for the
       // inbound cosmetic lane block (offsets 0..+roadWidth from the real
-      // lane's own centerline) — so the ribbon `offsetRibbon` builds from
+      // lane's own centerline), so the ribbon `offsetRibbon` builds from
       // it lands on just the inbound lanes, not the outbound ones on the
       // carriageway's other half.
       const laneCenterDistance = roadWidth / 2;
@@ -862,7 +862,7 @@ export function JunctionPixiCanvas({
       );
       const ribbon = offsetRibbon(scenePoints, roadWidth * 0.94);
       if (ribbon.length === 0) continue;
-      // Low alpha so the dashed lane markings underneath stay legible —
+      // Low alpha so the dashed lane markings underneath stay legible:
       // this is a wash over the asphalt, not an opaque overlay.
       layer.poly(ribbon.flat()).fill({
         color: congestionColor(level),
@@ -871,7 +871,7 @@ export function JunctionPixiCanvas({
     }
   }, [trafficState]);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: trafficState drives this callback's *identity* (so the reactive effect below re-fires on change), even though the body reads the current value through trafficStateRef rather than this closure — see trafficStateRef's own comment.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: trafficState drives this callback's *identity* (so the reactive effect below re-fires on change), even though the body reads the current value through trafficStateRef rather than this closure; see trafficStateRef's own comment.
   const syncVehicles = React.useCallback(() => {
     const scene = sceneRef.current;
     const layer = vehicleLayerRef.current;
@@ -986,7 +986,7 @@ export function JunctionPixiCanvas({
         appRef.current = app;
 
         // World layer: everything that pans/zooms together with the fit
-        // transform, stacked bottom to top — roads/pavement, the live
+        // transform, stacked bottom to top: roads/pavement, the live
         // congestion tint over them, signal bars on top of the tint (so it
         // never muddies their color), vehicles above the road surface, and
         // direction captions on top of all of it.
@@ -1017,7 +1017,7 @@ export function JunctionPixiCanvas({
         drawCongestion();
         // The traffic-state WebSocket can (and, since it fires the moment a
         // scenario is selected, routinely does) deliver its first message
-        // before this async `app.init()` resolves — that update's own
+        // before this async `app.init()` resolves; that update's own
         // reactive effect below fires while `appRef.current` is still null
         // and no-ops, and won't re-fire on its own until the *next* state
         // update arrives. Without this call, vehicles would sit invisible
@@ -1027,7 +1027,7 @@ export function JunctionPixiCanvas({
 
         // Current scene extent + the fit-to-canvas base scale, recomputed
         // on demand (not cached) since `resizeTo: host` can change
-        // `app.screen` at any time — interaction handlers below need this
+        // `app.screen` at any time; interaction handlers below need this
         // to convert between screen pixels and scene (map) coordinates.
         const getFit = () => {
           const geo = geometryRef.current;
@@ -1064,7 +1064,7 @@ export function JunctionPixiCanvas({
         };
 
         // Zooms so the scene point currently under (screenX, screenY)
-        // stays under it after the zoom change — the standard "zoom to
+        // stays under it after the zoom change: the standard "zoom to
         // cursor" (or to pinch midpoint) behavior.
         const setZoomAt = (
           nextZoomRaw: number,
@@ -1121,7 +1121,7 @@ export function JunctionPixiCanvas({
           },
         };
 
-        // Pointer-based drag-to-pan and two-finger pinch-to-zoom — Pointer
+        // Pointer-based drag-to-pan and two-finger pinch-to-zoom: Pointer
         // Events unify mouse, touch, and pen, so this one set of handlers
         // covers drag-panning on desktop and single-finger panning on
         // tablet/mobile; a second concurrent pointer escalates to pinch.
@@ -1179,7 +1179,7 @@ export function JunctionPixiCanvas({
           pinchStartDist = activePointers.size === 2 ? pointerDist() : null;
         };
         // Requires ctrl/cmd+wheel to zoom, the same convention Google Maps
-        // and Figma use — this canvas sits inside a normally-scrollable
+        // and Figma use: this canvas sits inside a normally-scrollable
         // dashboard page, not a full-viewport map, so capturing every plain
         // wheel tick would trap page scroll under the cursor. Plain wheel
         // is intentionally left alone (no preventDefault) so it scrolls
@@ -1274,7 +1274,7 @@ export function JunctionPixiCanvas({
       })
       .catch(() => {
         // No WebGL/Canvas2D context available (e.g. headless test
-        // environments) — the wrapping component still renders its
+        // environments), the wrapping component still renders its
         // accessible summary, so this is a silent no-op rather than a
         // crash.
         try {
@@ -1340,13 +1340,13 @@ export function JunctionPixiCanvas({
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div className="flex flex-wrap items-center gap-1.5">
             <Badge variant="secondary" className="font-mono tabular-nums">
-              Tick {trafficState?.tick ?? "—"}
+              Tick {trafficState?.tick ?? "-"}
             </Badge>
             <Badge variant="outline" className="font-mono tabular-nums">
               {trafficState?.activePhase ?? "IDLE"} ·{" "}
               {trafficState
                 ? `${Math.round(trafficState.elapsedPhaseTimeSec)}s`
-                : "—"}
+                : "-"}
             </Badge>
           </div>
 

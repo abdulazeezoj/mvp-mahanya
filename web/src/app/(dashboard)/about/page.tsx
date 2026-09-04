@@ -97,11 +97,11 @@ const PIPELINE_STAGES: { title: string; description: string }[] = [
 ];
 
 const SCHEDULER_RULES: string[] = [
-  "Minimum green time — a phase cannot end before its minimum duration elapses.",
-  "Maximum green time — a phase cannot run indefinitely even under sustained demand.",
-  "Transition intervals — yellow and all-red clearance intervals are enforced between any two conflicting phases.",
-  "Anti-starvation — a direction that has waited longer than a defined threshold forces a phase change, regardless of the model's recommendation.",
-  "Emergency vehicle pre-emption — a detected emergency vehicle immediately and safely overrides normal control to grant it right of way, then returns to normal control.",
+  "Minimum green time: a phase cannot end before its minimum duration elapses.",
+  "Maximum green time: a phase cannot run indefinitely even under sustained demand.",
+  "Transition intervals: yellow and all-red clearance intervals are enforced between any two conflicting phases.",
+  "Anti-starvation: a direction that has waited longer than a defined threshold forces a phase change, regardless of the model's recommendation.",
+  "Emergency vehicle pre-emption: a detected emergency vehicle immediately and safely overrides normal control to grant it right of way, then returns to normal control.",
 ];
 
 const REASON_CODES: SchedulerReasonCode[] = [
@@ -113,17 +113,17 @@ const REASON_CODES: SchedulerReasonCode[] = [
 ];
 
 const NON_GOALS: string[] = [
-  "No physical hardware integration — MaHanya controls a SUMO simulation, not a real traffic signal controller or physical sensors.",
-  "No multi-junction, network-wide optimization — scope is a single junction (the Sapon Under-bridge Junction, Abeokuta, as the calibration case study).",
-  "No production or city-wide deployment — this is a simulation-based academic prototype, evaluated against a fixed-time baseline on simulated scenarios, not a system intended to go live on a real road.",
-  "No general-purpose traffic-engineering platform — features are scoped to what the stated objectives require, not extended for hypothetical future junctions or use cases.",
+  "No physical hardware integration: MaHanya controls a SUMO simulation, not a real traffic signal controller or physical sensors.",
+  "No multi-junction, network-wide optimization: scope is a single junction (the Sapon Under-bridge Junction, Abeokuta, as the calibration case study).",
+  "No production or city-wide deployment: this is a simulation-based academic prototype, evaluated against a fixed-time baseline on simulated scenarios, not a system intended to go live on a real road.",
+  "No general-purpose traffic-engineering platform: features are scoped to what the stated objectives require, not extended for hypothetical future junctions or use cases.",
 ];
 
 const REFERENCES: string[] = [
-  "Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Kaiser, L., & Polosukhin, I. (2017). Attention is all you need. Advances in Neural Information Processing Systems, 30, 5998–6008.",
-  "Lopez, P. A., Behrisch, M., Bieker-Walz, L., Erdmann, J., Flötteröd, Y. P., Hilbrich, R., Lücken, L., Rummel, J., Wagner, P., & Wießner, E. (2018). Microscopic traffic simulation using SUMO. In 2018 21st International Conference on Intelligent Transportation Systems (ITSC) (pp. 2575–2582). IEEE.",
+  "Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Kaiser, L., & Polosukhin, I. (2017). Attention is all you need. Advances in Neural Information Processing Systems, 30, 5998-6008.",
+  "Lopez, P. A., Behrisch, M., Bieker-Walz, L., Erdmann, J., Flötteröd, Y. P., Hilbrich, R., Lücken, L., Rummel, J., Wagner, P., & Wießner, E. (2018). Microscopic traffic simulation using SUMO. In 2018 21st International Conference on Intelligent Transportation Systems (ITSC) (pp. 2575-2582). IEEE.",
   "Zhao, R., Hu, H., Li, Y., Fan, Y., Gao, F., & Gao, Z. (2024). Sequence decision transformer for adaptive traffic signal control. Sensors, 24(19), 6202.",
-  "Abdulhai, B., Pringle, R., & Karakoulas, G. J. (2003). Reinforcement learning for true adaptive traffic signal control. Journal of Transportation Engineering, 129(3), 278–285.",
+  "Abdulhai, B., Pringle, R., & Karakoulas, G. J. (2003). Reinforcement learning for true adaptive traffic signal control. Journal of Transportation Engineering, 129(3), 278-285.",
 ];
 
 function SectionHeading({
@@ -148,7 +148,7 @@ export default function AboutPage() {
     <div className="flex flex-1 flex-col gap-6">
       <PageHeader
         title="Methodology"
-        description="What MaHanya is, why it exists, and how it works — an Ahmadu Bello University final-year project."
+        description="What MaHanya is, why it exists, and how it works: an Ahmadu Bello University final-year project."
       />
 
       <Card>
@@ -167,8 +167,8 @@ export default function AboutPage() {
           <p>
             Fixed-time traffic signal systems allocate green time on a
             predetermined schedule, regardless of real-time demand. At
-            multi-direction road junctions — including those in growing Nigerian
-            cities such as Zaria, Kaduna, and Abuja — this produces unnecessary
+            multi-direction road junctions, including those in growing Nigerian
+            cities such as Zaria, Kaduna, and Abuja, this produces unnecessary
             vehicle delay on heavily loaded approaches while green time is
             wasted on lightly loaded ones, no systematic mechanism for
             prioritizing emergency vehicles, and accumulating queue imbalances
@@ -237,14 +237,14 @@ export default function AboutPage() {
         <Alert>
           <GavelIcon />
           <AlertTitle>
-            The model is advisory only — the scheduler is the sole authority
+            The model is advisory only: the scheduler is the sole authority
           </AlertTitle>
           <AlertDescription className="flex flex-col gap-3">
             <p>
               The transformer model's output is a recommendation, nothing more.
               Every recommendation is validated against deterministic
               operational rules before any signal state is applied, and every
-              decision — whether it accepts, holds, or overrides the model — is
+              decision, whether it accepts, holds, or overrides the model, is
               logged with an explicit reason code. This holds regardless of what
               the model recommends.
             </p>

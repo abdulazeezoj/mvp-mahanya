@@ -4,12 +4,12 @@ Priority-aware intelligent traffic control, simulated on real junction data.
 
 > **Status: implemented.** `api/` (SUMO simulation, transformer model, rule-based
 > scheduler, FastAPI relay, Typer CLI) and `web/` (Next.js dashboard) are both
-> built per [Architecture](docs/ARCHITECTURE.md) — see [How to run it](#how-to-run-it)
+> built per [Architecture](docs/ARCHITECTURE.md); see [How to run it](#how-to-run-it)
 > below.
 
 ## Background
 
-Most road junctions in growing Nigerian cities — Zaria, Kaduna, Abuja among them —
+Most road junctions in growing Nigerian cities, Zaria, Kaduna, Abuja among them,
 run on fixed-time traffic signal plans: green time is allocated on a predetermined
 schedule regardless of actual demand. This wastes green time on light directions,
 adds avoidable delay on heavy ones, and gives emergency vehicles no way to get
@@ -19,8 +19,8 @@ MaHanya is a simulation-based alternative: calibrate a microscopic traffic
 simulation with real vehicle-arrival data, train a lightweight model to recommend
 signal phases from observed traffic state, and wrap every recommendation in a
 deterministic, safety-critical rule layer before it's ever applied. The goal is a
-system that measurably beats a fixed-time baseline — in waiting time, queue length,
-throughput, and emergency-vehicle response time — without ever trusting a model
+system that measurably beats a fixed-time baseline, in waiting time, queue length,
+throughput, and emergency-vehicle response time, without ever trusting a model
 output directly for a safety-relevant decision.
 
 This is the basis for an Ahmadu Bello University final-year project, calibrated
@@ -35,24 +35,24 @@ Abeokuta**.
    junction.
 3. Trains a lightweight Transformer Encoder on simulated traffic-state sequences
    to recommend signal phases.
-4. Validates every recommendation against a rule-based scheduler — minimum/maximum
+4. Validates every recommendation against a rule-based scheduler (minimum/maximum
    green time, transition intervals, anti-starvation, and emergency-vehicle
-   pre-emption — before applying it.
+   pre-emption) before applying it.
 5. Evaluates the result against a fixed-time baseline on the same scenarios.
 6. Visualizes junction state, signal phase, priority events, and model
    recommendations on a dashboard.
 
 Read the full details in the docs:
 
-- **[Product Spec](docs/PRODUCT_SPEC.md)** — problem, goals, requirements,
+- **[Product Spec](docs/PRODUCT_SPEC.md)**: problem, goals, requirements,
   non-goals, success criteria.
-- **[Product Flow](docs/PRODUCT_FLOW.md)** — the end-to-end pipeline, from field
+- **[Product Flow](docs/PRODUCT_FLOW.md)**: the end-to-end pipeline, from field
   data to dashboard, including the runtime control loop.
-- **[Architecture](docs/ARCHITECTURE.md)** — the technical design, tech-stack
+- **[Architecture](docs/ARCHITECTURE.md)**: the technical design, tech-stack
   choices and justification, data contracts, and module boundaries.
-- **[Project Synopsis](docs/PROJECT_SYNOPSIS.docx)** — the original university
+- **[Project Synopsis](docs/PROJECT_SYNOPSIS.docx)**: the original university
   project synopsis this repo is based on.
-- **[Project Writing Guidelines](docs/Project_Writing_Guideline.md)** —
+- **[Project Writing Guidelines](docs/Project_Writing_Guideline.md)**:
   formatting rules for the final project write-up
   (`docs/PROJECT_SUBMISSION_FINAL.docx`), not for code.
 
@@ -94,7 +94,7 @@ Requires SUMO installed and `SUMO_HOME` set (`apt-get install sumo
 sumo-tools`).
 
 ```sh
-# api/ — from inside api/
+# api/ - from inside api/
 uv sync --extra dev
 uv run mahanya fit                                   # fit arrival distributions
 uv run mahanya calibrate --period peak                # generate a calibrated scenario
@@ -102,7 +102,7 @@ uv run mahanya generate && uv run mahanya train        # generate sequences + tr
 uv run mahanya serve-api                               # FastAPI relay on :8000
 uv run pytest                                          # full test suite
 
-# web/ — from inside web/, in another terminal
+# web/ - from inside web/, in another terminal
 pnpm install
 pnpm dev                                               # dashboard on :3000, talks to :8000
 pnpm test && pnpm test:e2e                             # vitest + Playwright
