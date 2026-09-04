@@ -1,4 +1,4 @@
-# MaHanya — Product Spec
+# MaHanya: Product Spec
 
 ## Purpose & audience
 
@@ -12,8 +12,8 @@ end-to-end operational flow, see [Product Flow](PRODUCT_FLOW.md).
 ## Problem statement
 
 Fixed-time traffic signal systems allocate green time on a predetermined schedule,
-regardless of real-time demand. At multi-direction road junctions — including
-those in growing Nigerian cities such as Zaria, Kaduna, and Abuja — this produces:
+regardless of real-time demand. At multi-direction road junctions, including
+those in growing Nigerian cities such as Zaria, Kaduna, and Abuja, this produces:
 
 - Unnecessary vehicle delay on heavily loaded approaches while green time is
   wasted on lightly loaded ones.
@@ -21,8 +21,8 @@ those in growing Nigerian cities such as Zaria, Kaduna, and Abuja — this produ
 - Accumulating queue imbalances during peak periods.
 
 Changing physical infrastructure to address this is expensive and impractical for
-an academic project. A simulation-based approach — calibrated with real traffic
-data and combined with a rule-guided scheduler — offers a rigorous, reproducible
+an academic project. A simulation-based approach (calibrated with real traffic
+data and combined with a rule-guided scheduler) offers a rigorous, reproducible
 way to study intelligent signal control within a final-year project's scope.
 
 ## Goals
@@ -44,7 +44,7 @@ way to study intelligent signal control within a final-year project's scope.
 - **No multi-junction, network-wide optimization.** Scope is a single junction
   (the Sapon Under-bridge Junction, Abeokuta, as the calibration case study).
 - **No production or city-wide deployment.** This is a simulation-based academic
-  prototype, evaluated against a fixed-time baseline on simulated scenarios — not
+  prototype, evaluated against a fixed-time baseline on simulated scenarios, not
   a system intended to go live on a real road.
 - **No general-purpose traffic-engineering platform.** Features are scoped to what
   the stated objectives require, not extended for hypothetical future junctions
@@ -52,12 +52,12 @@ way to study intelligent signal control within a final-year project's scope.
 
 ## Stakeholders
 
-- **Academic evaluators** — need to see the stated objectives met, with
+- **Academic evaluators**: need to see the stated objectives met, with
   reproducible evidence (data, calibration, trained model, evaluation results).
-- **A hypothetical traffic authority** — the intended real-world beneficiary of
+- **A hypothetical traffic authority**: the intended real-world beneficiary of
   this class of system, useful as a lens for realism (e.g. "would a traffic
   engineer trust this scheduler's behavior?").
-- **Driver/pedestrian safety reviewers** — the emergency-preemption and rule-based
+- **Driver/pedestrian safety reviewers**: the emergency-preemption and rule-based
   scheduler behavior must be defensible on safety grounds, not just performance.
 
 ## Functional requirements
@@ -82,14 +82,14 @@ recommends a signal phase from a window of observed traffic state.
 ### 4. Rule-based priority scheduler
 The system must validate every model recommendation against deterministic
 operational rules before applying it, specifically:
-- **Minimum green time** — a phase cannot end before its minimum duration elapses.
-- **Maximum green time** — a phase cannot run indefinitely even under sustained
+- **Minimum green time**: a phase cannot end before its minimum duration elapses.
+- **Maximum green time**: a phase cannot run indefinitely even under sustained
   demand.
-- **Transition intervals** — yellow and all-red clearance intervals are enforced
+- **Transition intervals**: yellow and all-red clearance intervals are enforced
   between any two conflicting phases.
-- **Anti-starvation** — a direction that has waited longer than a defined
+- **Anti-starvation**: a direction that has waited longer than a defined
   threshold forces a phase change, regardless of the model's recommendation.
-- **Emergency vehicle pre-emption** — a detected emergency vehicle immediately
+- **Emergency vehicle pre-emption**: a detected emergency vehicle immediately
   and safely overrides normal control to grant it right of way, then returns to
   normal control.
 
@@ -113,12 +113,12 @@ waiting time, queue length, throughput, and priority-vehicle response time.
   model's recommendation must be logged with an explicit reason (e.g. minimum
   green time held, anti-starvation forced, emergency pre-emption engaged).
 - **Safety framing.** The rule-based scheduler is the sole authority over what
-  signal state is actually applied. The model's output is advisory input only —
+  signal state is actually applied. The model's output is advisory input only;
   it is never applied directly.
 
 ## Success / acceptance criteria
 
-Concrete numeric thresholds are **TBD** — they depend on real traffic-count data
+Concrete numeric thresholds are **TBD**: they depend on real traffic-count data
 and baseline simulation results that don't exist yet. Once a fixed-time baseline
 has been run on the calibrated simulation, this section should be updated with
 specific targets, e.g. "average waiting time reduced by at least X% versus the
@@ -134,7 +134,7 @@ fixed-time baseline on the same scenario set." Until then, the qualitative bar i
 ## Assumptions & constraints
 
 - Single junction, four-way (Sapon Under-bridge Junction, Abeokuta), simulated
-  only — no physical deployment.
+  only, no physical deployment.
 - Calibration relies on manually or field-collected vehicle counts, not
   continuous sensor feeds.
 - Emergency-vehicle detection is provided by the simulation environment (SUMO

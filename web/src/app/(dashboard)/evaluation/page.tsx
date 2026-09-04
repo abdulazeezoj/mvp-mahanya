@@ -29,7 +29,7 @@ import type { EvaluationMetrics } from "@/lib/types";
  * be "better" than the fixed-time baseline. Per PRODUCT_SPEC.md's evaluation
  * section (functional requirement 6): waiting time, queue length, and
  * priority response time all shrink when control is better; throughput is
- * the exception — more vehicles cleared per hour is the improvement.
+ * the exception: more vehicles cleared per hour is the improvement.
  */
 const METRICS: {
   key: keyof EvaluationMetrics;
@@ -193,7 +193,7 @@ export default function EvaluationPage() {
                         <CardHeader>
                           <CardDescription>{label}</CardDescription>
                           <CardTitle className="text-xl font-semibold tabular-nums">
-                            {intelligentValue?.toFixed(1) ?? "—"} {unit}
+                            {intelligentValue?.toFixed(1) ?? "-"} {unit}
                           </CardTitle>
                           {improvement && (
                             <Badge
@@ -213,7 +213,7 @@ export default function EvaluationPage() {
                           )}
                           <span className="text-xs text-muted-foreground">
                             Fixed-time baseline:{" "}
-                            {fixedTimeValue?.toFixed(1) ?? "—"} {unit}
+                            {fixedTimeValue?.toFixed(1) ?? "-"} {unit}
                           </span>
                         </CardHeader>
                       </Card>

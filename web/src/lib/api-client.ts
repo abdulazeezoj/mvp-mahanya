@@ -9,7 +9,7 @@ import type {
 /**
  * The internal FastAPI relay's base URL. The dashboard is a static SPA
  * export (see ARCHITECTURE.md#internal-api-and-dashboard) that never talks
- * to SUMO/TraCI/PyTorch directly — every simulation fact comes from this
+ * to SUMO/TraCI/PyTorch directly; every simulation fact comes from this
  * boundary. Override at build time with NEXT_PUBLIC_API_BASE_URL.
  */
 export const API_BASE_URL =
@@ -87,7 +87,7 @@ export const api = {
     ),
 };
 
-/** ws(s)://…/api/streams/{scenarioId} — the live per-tick relay. */
+/** ws(s)://…/api/streams/{scenarioId}: the live per-tick relay. */
 export function getStreamUrl(scenarioId: string): string {
   const wsBase = API_BASE_URL.replace(/^http/, "ws");
   return `${wsBase}/api/streams/${encodeURIComponent(scenarioId)}`;

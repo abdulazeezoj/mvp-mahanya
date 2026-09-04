@@ -5,13 +5,13 @@ const API_ORIGIN = "http://127.0.0.1:9999";
 const SCENARIOS = [
   {
     id: "sapon-peak",
-    name: "Sapon Under-bridge — Peak Hour",
+    name: "Sapon Under-bridge: Peak Hour",
     status: "idle",
     seed: 1001,
   },
   {
     id: "sapon-offpeak",
-    name: "Sapon Under-bridge — Off-Peak",
+    name: "Sapon Under-bridge: Off-Peak",
     status: "idle",
     seed: 1002,
   },
@@ -132,14 +132,14 @@ test("live state page lists scenarios from the API and can run one", async ({
   const picker = page.getByRole("combobox", { name: /select scenario/i });
   await picker.click();
   await expect(
-    page.getByRole("option", { name: /Sapon Under-bridge — Peak Hour/i }),
+    page.getByRole("option", { name: /Sapon Under-bridge: Peak Hour/i }),
   ).toBeVisible();
   await expect(
-    page.getByRole("option", { name: /Sapon Under-bridge — Off-Peak/i }),
+    page.getByRole("option", { name: /Sapon Under-bridge: Off-Peak/i }),
   ).toBeVisible();
 
   await page
-    .getByRole("option", { name: /Sapon Under-bridge — Peak Hour/i })
+    .getByRole("option", { name: /Sapon Under-bridge: Peak Hour/i })
     .click();
   const [request] = await Promise.all([
     page.waitForRequest(`${API_ORIGIN}/api/controls/sapon-peak/run`),
@@ -155,7 +155,7 @@ test("live junction view renders a Pixi canvas once a scenario's geometry loads"
 
   await page.getByRole("combobox", { name: /select scenario/i }).click();
   await page
-    .getByRole("option", { name: /Sapon Under-bridge — Peak Hour/i })
+    .getByRole("option", { name: /Sapon Under-bridge: Peak Hour/i })
     .click();
   const junction = page.getByRole("img", { name: /live junction simulation/i });
   await expect(junction).toBeVisible();
@@ -173,7 +173,7 @@ test("decision log page renders decisions with a dash for bypassed recommendatio
   const table = page.getByRole("table");
   await expect(table.getByText("model_accepted")).toBeVisible();
   await expect(table.getByText("emergency_preempt")).toBeVisible();
-  await expect(table.getByText("—")).toBeVisible();
+  await expect(table.getByText("-")).toBeVisible();
 });
 
 test("evaluation page runs a comparison and shows both controllers", async ({
@@ -198,6 +198,6 @@ test("live state page shows the scenario picker and an empty state when none is 
     page.getByRole("combobox", { name: /select scenario/i }),
   ).toBeVisible();
   await expect(
-    page.getByText(/no live state yet — select and run/i),
+    page.getByText(/no live state yet\. select and run/i),
   ).toBeVisible();
 });

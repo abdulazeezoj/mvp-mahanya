@@ -1,7 +1,7 @@
 """MaHanya CLI: fit, calibrate, generate, train, run, evaluate, serve-api, build-web.
 
 Exposed as a console script via `api/pyproject.toml`'s `[project.scripts]`,
-pointing at `cli.main:app` — implementation stays here, packaging metadata
+pointing at `cli.main:app`; implementation stays here, packaging metadata
 stays in `pyproject.toml`.
 """
 
@@ -257,7 +257,7 @@ def serve_api(
 
 @app.command("build-web")
 def build_web() -> None:
-    """Build the Next.js SPA static export — the one command crossing the api/web boundary."""
+    """Build the Next.js SPA static export: the one command crossing the api/web boundary."""
 
     web_dir = REPO_ROOT / "web"
     if not web_dir.exists():

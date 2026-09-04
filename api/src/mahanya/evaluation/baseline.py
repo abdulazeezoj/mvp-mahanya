@@ -1,5 +1,5 @@
 """A fixed-time baseline controller: round-robin phases on a fixed schedule,
-with no adaptation, no anti-starvation, and no emergency pre-emption — the
+with no adaptation, no anti-starvation, and no emergency pre-emption: the
 status-quo behaviour described in PRODUCT_SPEC.md's problem statement, used
 as the evaluation control group the intelligent controller must beat.
 """

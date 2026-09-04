@@ -24,13 +24,13 @@ class ScenarioDef:
 SCENARIO_CATALOG: dict[str, ScenarioDef] = {
     "sapon-peak": ScenarioDef(
         id="sapon-peak",
-        name="Sapon Under-bridge — Peak Hour",
+        name="Sapon Under-bridge: Peak Hour",
         sumocfg_file="sapon_peak.sumocfg",
         seed=1001,
     ),
     "sapon-offpeak": ScenarioDef(
         id="sapon-offpeak",
-        name="Sapon Under-bridge — Off-Peak",
+        name="Sapon Under-bridge: Off-Peak",
         sumocfg_file="sapon_offpeak.sumocfg",
         seed=1002,
     ),

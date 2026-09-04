@@ -1,6 +1,6 @@
-# MaHanya — Product Flow
+# MaHanya: Product Flow
 
-This document describes the end-to-end flow of data and control through MaHanya —
+This document describes the end-to-end flow of data and control through MaHanya:
 from a field traffic count to a dashboard on someone's screen. For *what* the
 system must do, see [Product Spec](PRODUCT_SPEC.md). For *how* it's built, see
 [Architecture](ARCHITECTURE.md).
@@ -29,7 +29,7 @@ flowchart LR
   per direction, across peak and off-peak sessions.
 - **Output:** raw count records (timestamped, per direction, per period).
 - **Tooling:** manual data entry / CSV.
-- **Owner:** offline, one-time (per calibration cycle) field work — not a
+- **Owner:** offline, one-time (per calibration cycle) field work, not a
   runtime component.
 
 ### 2. Distribution fitting
@@ -73,7 +73,7 @@ model (stage 5); produces a live decision log.
 ### 7. Evaluation vs. fixed-time baseline
 - **Input:** the same calibrated scenarios, run once under the runtime control
   loop and once under a fixed-time baseline controller.
-- **Output:** comparative metrics — average waiting time, queue length,
+- **Output:** comparative metrics: average waiting time, queue length,
   throughput, priority-vehicle response time.
 - **Tooling:** a metrics module operating on logged run data.
 - **Owner:** offline batch step, re-run per evaluation cycle.
@@ -104,7 +104,7 @@ flowchart TD
 
 Emergency pre-emption is a short-circuit: it bypasses the model entirely and
 goes straight to a rule-determined safe state. In all other ticks, the model's
-recommendation is advisory — the scheduler is free to hold, delay, or override
+recommendation is advisory; the scheduler is free to hold, delay, or override
 it, and every such decision is logged with a reason code (e.g.
 `emergency_preempt`, `min_green_hold`, `anti_starvation_force`,
 `model_accepted`).
@@ -130,7 +130,7 @@ explicitly rather than left to crash:
   process boundary (log and stop), not silently continue on stale state.
 - **Model inference fails or times out.** The scheduler must fall back to a
   safe default phase (e.g. hold current phase until minimum/maximum green
-  rules force a change) rather than blocking on or propagating the failure —
+  rules force a change) rather than blocking on or propagating the failure;
   the deterministic layer never depends on the model succeeding.
 - **Emergency detected while a phase is mid-transition.** Pre-emption still
   takes effect at the next legal transition point; it does not skip a

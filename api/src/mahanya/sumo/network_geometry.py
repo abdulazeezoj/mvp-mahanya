@@ -1,6 +1,6 @@
 """Static junction road geometry, parsed directly from a compiled `.net.xml`.
 
-Kept separate from TraCI entirely — this only reads the checked-in network
+Kept separate from TraCI entirely: this only reads the checked-in network
 file, so it works without a running SUMO process and never changes for the
 lifetime of a scenario.
 """

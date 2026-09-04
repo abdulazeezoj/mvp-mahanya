@@ -1,5 +1,5 @@
 """FastAPI route tests, using dependency overrides so they never touch a
-real SUMO/TraCI process — only route wiring, status codes, and payload
+real SUMO/TraCI process; only route wiring, status codes, and payload
 shape are under test here.
 """
 

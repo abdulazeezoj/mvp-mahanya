@@ -1,5 +1,5 @@
 """Integration test for the heavier `/api/snapshots/{id}/evaluation` route,
-which spins up two real SUMO subprocesses (intelligent vs. fixed-time) —
+which spins up two real SUMO subprocesses (intelligent vs. fixed-time),
 too slow/SUMO-dependent for the fake-registry route tests in
 tests/unit/test_routes.py.
 """

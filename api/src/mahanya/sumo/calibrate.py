@@ -1,7 +1,7 @@
 """Generate a calibrated .rou.xml from fitted arrival-distribution parameters.
 
 Each direction gets one straight-through traffic flow (see
-network/plain/sapon.con.xml — no protected-turn phases) whose insertion
+network/plain/sapon.con.xml, no protected-turn phases) whose insertion
 rate is drawn from the fitted Poisson/negative-binomial parameters for that
 direction/period, plus a low-probability "emergency" flow per direction so
 pre-emption is exercised in generated scenarios. Civilian vehicles are
@@ -9,7 +9,7 @@ drawn from a shared `vTypeDistribution` (VEHICLE_TYPE_MIX) rather than
 split into one flow per type: giving each type its own
 `period="exp(rate)"` flow means two crossing directions end up with
 several simultaneous low-rate probabilistic flows whose rates differ from
-each other — which reproducibly hangs SUMO 1.18.0 at the very first
+each other, which reproducibly hangs SUMO 1.18.0 at the very first
 simulation step (observed hang, ~100% CPU / multi-GB RSS, no vehicles
 inserted yet). A single per-direction flow keyed to a type distribution
 avoids that combination entirely while still matching the *total* fitted
@@ -37,7 +37,7 @@ EMERGENCY_VEH_PER_HOUR = 6.0
 
 #: Assumed civilian traffic-composition mix, split off the single fitted
 #: arrival rate per direction/period. This is a **placeholder assumption**,
-#: not calibrated from field data — the field-count CSV
+#: not calibrated from field data: the field-count CSV
 #: (api/data/raw/sapon_traffic_counts.csv) records only a single aggregate
 #: vehicle_count per direction/period, with no per-type breakdown, the same
 #: way that CSV's contents are themselves documented as synthetic pending a

@@ -2,7 +2,7 @@
 
 Drives the same rule-based `Controller` used at runtime, but with a
 longest-queue heuristic standing in for the transformer as the model under
-imitation — the scheduler still owns min/max green, transitions,
+imitation; the scheduler still owns min/max green, transitions,
 anti-starvation, and emergency pre-emption, so the label the transformer
 eventually learns to imitate is "the safety-scheduler-validated outcome of
 a longest-queue heuristic," not a raw unfiltered heuristic recommendation.
@@ -25,7 +25,7 @@ DIRECTIONS: tuple[ApproachDirection, ...] = ("north", "south", "east", "west")
 
 class LongestQueueOracle:
     """Recommends green for whichever approach currently has the longest
-    queue — the imitation-learning target for `PhaseTransformer`."""
+    queue: the imitation-learning target for `PhaseTransformer`."""
 
     def predict(self, history: Sequence[TrafficState]) -> PhaseRecommendation:
         latest = history[-1]

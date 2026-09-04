@@ -89,7 +89,7 @@ class TestTransitionSequencing:
 
     def test_transition_never_skips_a_stage(self, thresholds):
         """No single tick may jump straight from a green phase to another
-        green phase, or from yellow straight to green — every hard safety
+        green phase, or from yellow straight to green: every hard safety
         transition state must be visited."""
 
         state = initial_state("NORTH_GREEN")
@@ -150,7 +150,7 @@ class TestMaximumGreen:
         assert decision.reason_code == "max_green_force"
         # All non-active directions accrue wait at the same rate here, so
         # the deterministic tie-break should pick the first in
-        # DIRECTION_ORDER after "north" — i.e. "south".
+        # DIRECTION_ORDER after "north", i.e. "south".
         assert state.target_green == "SOUTH_GREEN"
 
 
@@ -192,7 +192,7 @@ class TestEmergencyPreemption:
         assert state.target_green == "EAST_GREEN"
 
     def test_emergency_never_skips_minimum_green(self, thresholds):
-        """Minimum green is a hard safety constraint — even an emergency
+        """Minimum green is a hard safety constraint; even an emergency
         vehicle must wait for it, per the acceptance criteria."""
 
         state = initial_state("NORTH_GREEN")
@@ -219,7 +219,7 @@ class TestEmergencyPreemption:
 
     def test_never_skips_yellow_or_all_red_for_emergency(self, thresholds):
         """Pre-emption still takes effect only at the next legal transition
-        point — it must not skip a clearance interval."""
+        point; it must not skip a clearance interval."""
 
         state = initial_state("NORTH_GREEN")
         for _ in range(int(thresholds.min_green_sec)):

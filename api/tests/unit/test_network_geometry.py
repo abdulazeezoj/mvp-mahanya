@@ -1,5 +1,5 @@
 """`network_geometry.load_network_geometry` against the checked-in compiled
-network — pure XML parsing, no running SUMO process required.
+network: pure XML parsing, no running SUMO process required.
 """
 
 from __future__ import annotations

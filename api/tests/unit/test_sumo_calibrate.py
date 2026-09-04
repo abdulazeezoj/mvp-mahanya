@@ -1,4 +1,4 @@
-"""Tests for `sumo.calibrate`'s route/sumocfg XML generation — pure XML
+"""Tests for `sumo.calibrate`'s route/sumocfg XML generation: pure XML
 writing, no SUMO process required.
 """
 

@@ -57,7 +57,7 @@ export function makeDecision(
 export function makeScenario(overrides: Partial<Scenario> = {}): Scenario {
   return {
     id: "sapon-peak",
-    name: "Sapon Under-bridge — Peak Hour",
+    name: "Sapon Under-bridge: Peak Hour",
     status: "idle",
     seed: 1001,
     ...overrides,

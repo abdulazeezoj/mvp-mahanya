@@ -1,4 +1,4 @@
-"""POST /api/controls/{scenario_id}/{run,pause,step,reset} — session lifecycle."""
+"""POST /api/controls/{scenario_id}/{run,pause,step,reset}: session lifecycle."""
 
 from __future__ import annotations
 

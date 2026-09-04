@@ -1,7 +1,7 @@
 """Load a trained `PhaseTransformer` checkpoint and produce `PhaseRecommendation`s.
 
 `ModelRecommender` structurally implements
-`mahanya.scheduler.controller.PhaseRecommender` — the scheduler never
+`mahanya.scheduler.controller.PhaseRecommender`; the scheduler never
 imports this module directly, only the Protocol it satisfies.
 """
 

@@ -20,7 +20,7 @@ FEATURES_PER_DIRECTION = 4  # vehicle_count, queue_length, waiting_time_sec, has
 PHASE_ONE_HOT_DIM = len(ALL_PHASES)
 FEATURE_DIM = FEATURES_PER_DIRECTION * len(DIRECTIONS) + PHASE_ONE_HOT_DIM + 1
 
-# Fixed normalization scales — a documented simplification pending a fitted
+# Fixed normalization scales: a documented simplification pending a fitted
 # scaler from real production traffic-volume statistics.
 VEHICLE_COUNT_SCALE = 30.0
 QUEUE_LENGTH_SCALE = 20.0
