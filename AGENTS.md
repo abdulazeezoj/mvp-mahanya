@@ -32,8 +32,8 @@ is collected; swapping it is a drop-in file replacement, no code changes.
 - [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — tech stack, component
   boundaries, data contracts, proposed source layout.
 - [`docs/Project_Writing_Guideline.md`](docs/Project_Writing_Guideline.md) —
-  formatting rules for the academic write-up (`Project_Submission.docx`);
-  not a code convention.
+  formatting rules for the academic write-up
+  (`docs/PROJECT_SUBMISSION_FINAL.docx`); not a code convention.
 
 Before proposing or writing any implementation code, read the first three —
 they contain the reasoning behind decisions that would otherwise look

@@ -53,8 +53,8 @@ Read the full details in the docs:
 - **[Project Synopsis](docs/PROJECT_SYNOPSIS.docx)** — the original university
   project synopsis this repo is based on.
 - **[Project Writing Guidelines](docs/Project_Writing_Guideline.md)** —
-  formatting rules for the final project write-up (`Project_Submission.docx`),
-  not for code.
+  formatting rules for the final project write-up
+  (`docs/PROJECT_SUBMISSION_FINAL.docx`), not for code.
 
 ## Tech stack
 
